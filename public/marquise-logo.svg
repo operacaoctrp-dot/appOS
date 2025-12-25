@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <!-- Triângulo verde -->
+  <path d="M10 50 L30 10 L50 50 Z" fill="#10b981"/>
+  <!-- Triângulo laranja -->
+  <path d="M40 50 L60 10 L80 50 Z" fill="#f97316"/>
+  <!-- Texto MARQUISE -->
+  <text x="90" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#000">MARQUISE</text>
+  <!-- Texto AMBIENTAL -->
+  <text x="90" y="50" font-family="Arial, sans-serif" font-size="10" letter-spacing="3" fill="#666">A M B I E N T A L</text>
+</svg>
