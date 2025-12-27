@@ -1,4 +1,4 @@
-import Toast, { type PluginOptions } from "vue-toastification";
+import Toast, { type PluginOptions, useToast } from "vue-toastification";
 import "vue-toastification/dist/index.css";
 
 export default defineNuxtPlugin((nuxtApp) => {
@@ -21,4 +21,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   };
 
   nuxtApp.vueApp.use(Toast, options);
+
+  return {
+    provide: {
+      toast: useToast(),
+    },
+  };
 });

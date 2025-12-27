@@ -1,29 +1,26 @@
-import pkg from "vue-toastification";
-const { useToast } = pkg;
-
 export const useNotification = () => {
-  const toast = useToast();
+  const { $toast } = useNuxtApp();
 
   const success = (mensagem: string, titulo?: string) => {
-    toast.success(titulo ? `${titulo}: ${mensagem}` : mensagem, {
+    $toast.success(titulo ? `${titulo}: ${mensagem}` : mensagem, {
       timeout: 3000,
     });
   };
 
   const error = (mensagem: string, titulo?: string) => {
-    toast.error(titulo ? `${titulo}: ${mensagem}` : mensagem, {
+    $toast.error(titulo ? `${titulo}: ${mensagem}` : mensagem, {
       timeout: 4000,
     });
   };
 
   const warning = (mensagem: string, titulo?: string) => {
-    toast.warning(titulo ? `${titulo}: ${mensagem}` : mensagem, {
+    $toast.warning(titulo ? `${titulo}: ${mensagem}` : mensagem, {
       timeout: 3500,
     });
   };
 
   const info = (mensagem: string, titulo?: string) => {
-    toast.info(titulo ? `${titulo}: ${mensagem}` : mensagem, {
+    $toast.info(titulo ? `${titulo}: ${mensagem}` : mensagem, {
       timeout: 3000,
     });
   };
