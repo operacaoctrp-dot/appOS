@@ -1,7 +1,8 @@
-import Toast from "vue-toastification";
+import pkg from "vue-toastification";
+const { useToast } = pkg;
 
 export const useNotification = () => {
-  const toast = Toast.useToast();
+  const toast = useToast();
 
   const success = (mensagem: string, titulo?: string) => {
     toast.success(titulo ? `${titulo}: ${mensagem}` : mensagem, {
