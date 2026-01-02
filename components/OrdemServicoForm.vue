@@ -23,7 +23,11 @@
           <h2 class="text-2xl font-bold italic">ORDEM DE SERVIÇO</h2>
           <div class="text-right">
             <span class="text-sm">N°</span>
-            <span class="text-3xl font-bold ml-2">{{ numeroOS }}</span>
+            <span class="text-3xl font-bold ml-2"
+              >{{ numeroOS }}/{{
+                String(new Date().getFullYear()).slice(-2)
+              }}</span
+            >
           </div>
         </div>
 
