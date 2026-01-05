@@ -39,6 +39,42 @@ export const useAuth = () => {
     }
   };
 
+  // Garantir que a sessão está válida antes de fazer operações
+  const ensureValidSession = async (): Promise<boolean> => {
+    try {
+      // Primeiro, tentar obter a sessão atual
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession();
+
+      if (!currentSession) {
+        console.log("Sem sessão ativa, tentando refresh...");
+        return await refreshSession();
+      }
+
+      // Verificar se o token está próximo de expirar (menos de 5 minutos)
+      const expiresAt = currentSession.expires_at;
+      if (expiresAt) {
+        const now = Math.floor(Date.now() / 1000);
+        const timeUntilExpiry = expiresAt - now;
+
+        if (timeUntilExpiry < 300) {
+          // menos de 5 minutos
+          console.log(`Token expira em ${timeUntilExpiry}s, renovando...`);
+          return await refreshSession();
+        }
+      }
+
+      // Sessão válida
+      session.value = currentSession;
+      user.value = currentSession.user;
+      return true;
+    } catch (error) {
+      console.error("Erro ao verificar sessão:", error);
+      return await refreshSession();
+    }
+  };
+
   // Buscar role do usuário
   const fetchUserRole = async (userId: string) => {
     try {
@@ -107,6 +143,39 @@ export const useAuth = () => {
               console.log("Sessão renovada:", renewed);
             }
           }, 2 * 60 * 1000); // 2 minutos
+
+          // Renovar sessão quando a página volta a ficar visível (após inatividade)
+          document.addEventListener("visibilitychange", async () => {
+            if (document.visibilityState === "visible" && user.value) {
+              console.log(
+                "Página voltou a ficar visível, verificando sessão..."
+              );
+              await ensureValidSession();
+            }
+          });
+
+          // Renovar sessão quando o usuário interage após período de inatividade
+          let lastActivity = Date.now();
+          const checkInactivity = () => {
+            const now = Date.now();
+            const inactiveTime = now - lastActivity;
+            // Se ficou inativo por mais de 1 minuto, renovar sessão
+            if (inactiveTime > 60000 && user.value) {
+              console.log(
+                `Atividade detectada após ${Math.round(
+                  inactiveTime / 1000
+                )}s de inatividade, renovando sessão...`
+              );
+              ensureValidSession();
+            }
+            lastActivity = now;
+          };
+
+          ["mousedown", "keydown", "touchstart", "scroll"].forEach((event) => {
+            document.addEventListener(event, checkInactivity, {
+              passive: true,
+            });
+          });
         }
       }
     } catch (error) {
@@ -313,5 +382,6 @@ export const useAuth = () => {
     updatePassword,
     fetchUserRole,
     refreshSession,
+    ensureValidSession,
   };
 };

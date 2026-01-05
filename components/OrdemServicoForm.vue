@@ -336,7 +336,7 @@ const isEditMode = computed(() => !!props.ordemId);
 
 const router = useRouter();
 const { success, error: showError } = useNotification();
-const { refreshSession } = useAuth();
+const { refreshSession, ensureValidSession } = useAuth();
 const {
   getProximoNumero,
   criarOrdem,
@@ -436,6 +436,11 @@ const carregarDados = async () => {
   try {
     console.log("Carregando dados...");
 
+    // Garantir sessão válida antes de carregar dados
+    if (isOnline.value) {
+      await ensureValidSession();
+    }
+
     // Carregar dados auxiliares primeiro
     familias.value = await listarFamilias();
     console.log("Famílias carregadas:", familias.value);
@@ -526,10 +531,16 @@ const onFamiliaChange = async () => {
         : "Você está offline. Conecte-se à internet para buscar ativos.";
       ativosLoading.value = false;
     }
-  }, 10000);
+  }, 15000); // Aumentado para 15 segundos para dar tempo ao refresh
 
   try {
     if (form.value.familia_id) {
+      // Garantir sessão válida ANTES de fazer a requisição
+      if (isOnline.value) {
+        console.log("Verificando sessão antes de buscar ativos...");
+        await ensureValidSession();
+      }
+
       let ativos = await listarAtivosPorFamilia(form.value.familia_id);
 
       // Se não retornou ativos e está online, tentar renovar sessão e buscar novamente
