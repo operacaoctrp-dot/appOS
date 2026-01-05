@@ -879,7 +879,9 @@ const carregarOrdens = async (tentativa = 1) => {
     if (carregando.value) {
       console.warn("Timeout ao carregar ordens");
       carregando.value = false;
-      showError("Tempo excedido ao carregar. Tente novamente ou recarregue a página.");
+      showError(
+        "Tempo excedido ao carregar. Tente novamente ou recarregue a página."
+      );
     }
   }, 25000);
 
