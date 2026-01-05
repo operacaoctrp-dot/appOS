@@ -874,7 +874,7 @@ const excluirOrdem = async (ordem: OrdemServicoComRelacoes) => {
 const carregarOrdens = async (tentativa = 1) => {
   carregando.value = true;
 
-  // Timeout de 25 segundos (muito maior para dar tempo ao refresh)
+  // Timeout de 15 segundos
   const timeoutId = setTimeout(() => {
     if (carregando.value) {
       console.warn("Timeout ao carregar ordens");
@@ -883,31 +883,11 @@ const carregarOrdens = async (tentativa = 1) => {
         "Tempo excedido ao carregar. Tente novamente ou recarregue a página."
       );
     }
-  }, 25000);
+  }, 15000);
 
   try {
-    console.log(`=== Tentativa ${tentativa} de carregar ordens ===`);
+    console.log(`Tentativa ${tentativa}: Carregando ordens...`);
 
-    // Garantir sessão válida antes de carregar dados
-    console.log("Passo 1: Verificando sessão...");
-    const sessionValid = await ensureValidSession();
-    console.log(`Sessão válida: ${sessionValid}`);
-
-    if (!sessionValid && tentativa === 1) {
-      console.warn(
-        "Sessão inválida na primeira tentativa, tentando novamente..."
-      );
-      clearTimeout(timeoutId);
-      return carregarOrdens(2);
-    }
-
-    if (!sessionValid && tentativa >= 2) {
-      console.error("Falha ao renovar sessão após múltiplas tentativas");
-      showError("Sessão expirada. Por favor, recarregue a página.");
-      return;
-    }
-
-    console.log("Passo 2: Carregando ordens do banco...");
     const statusFiltro =
       filtroStatus.value === "todas"
         ? undefined

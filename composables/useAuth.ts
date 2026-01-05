@@ -42,54 +42,33 @@ export const useAuth = () => {
   // Garantir que a sessão está válida antes de fazer operações
   const ensureValidSession = async (): Promise<boolean> => {
     try {
-      // SEMPRE tentar fazer refresh proativo de sessão
-      // Isso garante que o token está fresco
-      console.log("Fazendo refresh proativo de sessão...");
-      const { data: refreshData, error: refreshError } =
-        await supabase.auth.refreshSession();
+      console.log("Verificando sessão...");
+      // Simplesmente tentar refresh - se funcionar, ótimo. Se não, tudo bem
+      const { data, error } = await supabase.auth.refreshSession();
 
-      if (refreshError) {
-        console.error("Erro ao fazer refresh proativo:", refreshError);
-      }
-
-      if (refreshData.session) {
-        session.value = refreshData.session;
-        user.value = refreshData.session.user;
-        console.log("Sessão renovada com sucesso (proativa)");
+      if (!error && data.session) {
+        session.value = data.session;
+        user.value = data.session.user;
+        console.log("Sessão renovada");
         return true;
       }
 
-      // Se o refresh não retornou sessão, tentar obter a sessão atual
+      // Se o refresh falhou, verificar se ainda temos uma sessão válida
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
-
-      if (!currentSession) {
-        console.log("Nenhuma sessão ativa após refresh");
-        return false;
-      }
-
-      // Sessão válida
-      session.value = currentSession;
-      user.value = currentSession.user;
-      console.log("Sessão ainda válida");
-      return true;
-    } catch (error) {
-      console.error("Erro crítico ao garantir sessão:", error);
-      // Última tentativa: fazer refresh explícito
-      try {
-        const { data, error: err } = await supabase.auth.refreshSession();
-        if (err || !data.session) {
-          console.error("Falha total na renovação de sessão");
-          return false;
-        }
-        session.value = data.session;
-        user.value = data.session.user;
+      if (currentSession) {
+        session.value = currentSession;
+        user.value = currentSession.user;
+        console.log("Sessão ainda válida");
         return true;
-      } catch (finalError) {
-        console.error("Exceção final ao renovar:", finalError);
-        return false;
       }
+
+      console.warn("Nenhuma sessão válida");
+      return false;
+    } catch (error) {
+      console.error("Erro ao garantir sessão:", error);
+      return false;
     }
   };
 

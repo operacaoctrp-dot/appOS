@@ -436,11 +436,6 @@ const carregarDados = async () => {
   try {
     console.log("Carregando dados...");
 
-    // Garantir sessão válida antes de carregar dados
-    if (isOnline.value) {
-      await ensureValidSession();
-    }
-
     // Carregar dados auxiliares primeiro
     familias.value = await listarFamilias();
     console.log("Famílias carregadas:", familias.value);

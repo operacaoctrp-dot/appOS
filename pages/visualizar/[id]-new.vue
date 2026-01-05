@@ -281,14 +281,6 @@ const carregarOrdem = async () => {
   const id = parseInt(route.params.id as string);
   if (id) {
     try {
-      // Garantir sessão válida antes de carregar dados
-      console.log(`Tentativa ${tentativa}: Verificando sessão...`);
-      const sessionValid = await ensureValidSession();
-      if (!sessionValid && tentativa === 1) {
-        console.warn("Sessão inválida, tentando novamente...");
-        return carregarOrdem(2);
-      }
-
       ordem.value = await buscarOrdem(id);
       if (!ordem.value) {
         alert("Ordem de serviço não encontrada!");

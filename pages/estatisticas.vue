@@ -1244,17 +1244,8 @@ const carregarDados = async (tentativa = 1) => {
       erroCarregamento.value = true;
       carregando.value = false;
     }
-  }, 15000); // 15 segundos
+  }, 10000); // 10 segundos
   try {
-    // Garantir sessão válida antes de carregar dados
-    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
-    const sessionValid = await ensureValidSession();
-    if (!sessionValid && tentativa === 1) {
-      console.warn("Sessão inválida, tentando novamente...");
-      clearTimeout(timeoutId);
-      return carregarDados(2);
-    }
-
     ordens.value = await listarOrdens();
   } catch (error) {
     console.error("Erro ao carregar dados:", error);
