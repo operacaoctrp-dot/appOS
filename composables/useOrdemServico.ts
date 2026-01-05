@@ -12,9 +12,15 @@ export const useOrdemServico = () => {
   const { refreshSession } = useAuth();
 
   // Helper para adicionar timeout a qualquer requisição do Supabase
-  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+  const withTimeout = async <T>(
+    promise: Promise<T>,
+    timeoutMs: number = 30000 // 30 segundos ao invés de 8
+  ): Promise<T> => {
     const timeoutPromise = new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Requisição expirou após ${timeoutMs}ms`)), timeoutMs)
+      setTimeout(
+        () => reject(new Error(`Requisição expirou após ${timeoutMs}ms`)),
+        timeoutMs
+      )
     );
     return Promise.race([promise, timeoutPromise]);
   };
@@ -357,10 +363,7 @@ export const useOrdemServico = () => {
     await ensureSessionBeforeRequest();
     try {
       const { data, error } = await withTimeout(
-        supabase
-          .from("familias")
-          .select("*")
-          .order("codigo")
+        supabase.from("familias").select("*").order("codigo")
       );
 
       if (error) {
@@ -418,13 +421,9 @@ export const useOrdemServico = () => {
 
   // Buscar solicitantes
   const listarSolicitantes = async (): Promise<Solicitante[]> => {
-    await ensureSessionBeforeRequest();
     try {
       const { data, error } = await withTimeout(
-        supabase
-          .from("solicitantes")
-          .select("*")
-          .order("nome")
+        supabase.from("solicitantes").select("*").order("nome")
       );
 
       if (error) {
@@ -441,13 +440,9 @@ export const useOrdemServico = () => {
 
   // Buscar funcionários
   const listarFuncionarios = async (): Promise<Funcionario[]> => {
-    await ensureSessionBeforeRequest();
     try {
       const { data, error } = await withTimeout(
-        supabase
-          .from("funcionarios")
-          .select("*")
-          .order("nome")
+        supabase.from("funcionarios").select("*").order("nome")
       );
 
       if (error) {
