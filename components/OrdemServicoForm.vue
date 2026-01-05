@@ -433,6 +433,15 @@ const funcionariosOptions = computed(() =>
 // Métodos
 const carregarDados = async () => {
   carregandoDados.value = true;
+
+  // Timeout para evitar ficar carregando infinitamente
+  const timeoutId = setTimeout(() => {
+    if (carregandoDados.value) {
+      carregandoDados.value = false;
+      showError("Tempo excedido ao carregar formulário. Recarregue a página.");
+    }
+  }, 20000); // 20 segundos de timeout total
+
   try {
     console.log("Carregando dados...");
 
@@ -511,6 +520,7 @@ const carregarDados = async () => {
     console.error("Erro ao carregar dados:", error);
     showError("Erro ao carregar dados do formulário");
   } finally {
+    clearTimeout(timeoutId);
     carregandoDados.value = false;
   }
 };
