@@ -144,9 +144,7 @@ export const useAuth = () => {
           // Renovar sessão quando a página volta a ficar visível (após inatividade)
           document.addEventListener("visibilitychange", async () => {
             if (document.visibilityState === "visible" && user.value) {
-              console.log(
-                "Página voltou a ficar visível, renovando sessão..."
-              );
+              console.log("Página voltou a ficar visível, renovando sessão...");
               await refreshSession();
             }
           });

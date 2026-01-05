@@ -11,21 +11,29 @@ export const useOrdemServico = () => {
   const supabase = useSupabase();
   const { refreshSession } = useAuth();
 
+  // Helper para adicionar timeout a qualquer requisição do Supabase
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+    const timeoutPromise = new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Requisição expirou após ${timeoutMs}ms`)), timeoutMs)
+    );
+    return Promise.race([promise, timeoutPromise]);
+  };
+
   // Garantir que a sessão está válida antes de fazer requisição
+  // Com timeout curto para não bloquear
   const ensureSessionBeforeRequest = async () => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.log(
-          "Sem sessão válida, tentando renovar..."
-        );
-        await refreshSession();
-      }
+      // Timeout de 2 segundos - se não conseguir renovar, segue em frente
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 2000)
+      );
+
+      const sessionPromise = refreshSession();
+      await Promise.race([sessionPromise, timeoutPromise]);
+      console.log("Sessão renovada com sucesso");
     } catch (error) {
-      console.error("Erro ao verificar sessão:", error);
+      // Se falhar ou timeout, apenas log e continua
+      console.warn("Não foi possível renovar sessão, continuando...", error);
     }
   };
 
@@ -49,30 +57,37 @@ export const useOrdemServico = () => {
   // Listar todas as ordens de serviço com relações
   const listarOrdens = async (): Promise<OrdemServicoComRelacoes[]> => {
     console.log("Carregando lista de ordens...");
-    
+
     // Garantir sessão válida antes de fazer a requisição
     await ensureSessionBeforeRequest();
-    
-    const { data, error } = await supabase
-      .from("ordens_servico")
-      .select(
-        `
-        *,
-        familia:familias(*),
-        ativo:ativos(*),
-        solicitante:solicitantes(*),
-        recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
-        executor:funcionarios!ordens_servico_executor_id_fkey(*)
-      `
-      )
-      .order("numero", { ascending: false });
 
-    if (error) {
-      console.error("Erro ao listar ordens:", error);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("ordens_servico")
+          .select(
+            `
+            *,
+            familia:familias(*),
+            ativo:ativos(*),
+            solicitante:solicitantes(*),
+            recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
+            executor:funcionarios!ordens_servico_executor_id_fkey(*)
+          `
+          )
+          .order("numero", { ascending: false })
+      );
+
+      if (error) {
+        console.error("Erro ao listar ordens:", error);
+        return [];
+      }
+
+      return (data as OrdemServicoComRelacoes[]) || [];
+    } catch (error) {
+      console.error("Erro ao listar ordens (timeout ou erro):", error);
       return [];
     }
-
-    return (data as OrdemServicoComRelacoes[]) || [];
   };
 
   // Listar ordens de serviço com paginação e busca
@@ -150,27 +165,32 @@ export const useOrdemServico = () => {
 
     query = query.order("numero", { ascending: false }).range(from, to);
 
-    const { data, error, count } = await query;
+    try {
+      const { data, error, count } = await withTimeout(query);
 
-    if (error) {
-      console.error("Erro ao listar ordens paginado:", error);
+      if (error) {
+        console.error("Erro ao listar ordens paginado:", error);
+        return { data: [], totalCount: 0, totalPages: 0 };
+      }
+
+      const totalCount = count || 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      console.log(
+        `Ordens carregadas: ${
+          data?.length || 0
+        } de ${totalCount} registros (página ${page}/${totalPages})`
+      );
+
+      return {
+        data: (data as OrdemServicoComRelacoes[]) || [],
+        totalCount,
+        totalPages,
+      };
+    } catch (error) {
+      console.error("Erro ao listar ordens (timeout ou erro):", error);
       return { data: [], totalCount: 0, totalPages: 0 };
     }
-
-    const totalCount = count || 0;
-    const totalPages = Math.ceil(totalCount / pageSize);
-
-    console.log(
-      `Ordens carregadas: ${
-        data?.length || 0
-      } de ${totalCount} registros (página ${page}/${totalPages})`
-    );
-
-    return {
-      data: (data as OrdemServicoComRelacoes[]) || [],
-      totalCount,
-      totalPages,
-    };
   };
 
   // Buscar ordem de serviço por ID
@@ -179,49 +199,58 @@ export const useOrdemServico = () => {
   ): Promise<OrdemServicoComRelacoes | null> => {
     // Garantir sessão válida antes de fazer a requisição
     await ensureSessionBeforeRequest();
-    
-    const { data, error } = await supabase
-      .from("ordens_servico")
-      .select(
-        `
-        *,
-        familia:familias(*),
-        ativo:ativos(*),
-        solicitante:solicitantes(*),
-        recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
-        executor:funcionarios!ordens_servico_executor_id_fkey(*)
-      `
-      )
-      .eq("id", id)
-      .single();
 
-    if (error) {
-      console.error("Erro ao buscar ordem:", error);
-      return null;
-    }
-
-    // Buscar executores da tabela de relacionamento
-    if (data) {
-      const { data: executoresData, error: execError } = await supabase
-        .from("ordem_servico_executores")
-        .select(
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("ordens_servico")
+          .select(
+            `
+            *,
+            familia:familias(*),
+            ativo:ativos(*),
+            solicitante:solicitantes(*),
+            recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
+            executor:funcionarios!ordens_servico_executor_id_fkey(*)
           `
-          funcionario_id,
-          ordem,
+          )
+          .eq("id", id)
+          .single()
+      );
+
+      if (error) {
+        console.error("Erro ao buscar ordem:", error);
+        return null;
+      }
+
+      // Buscar executores da tabela de relacionamento
+      if (data) {
+        const { data: executoresData, error: execError } = await withTimeout(
+          supabase
+            .from("ordem_servico_executores")
+            .select(
+              `
+            funcionario_id,
+            ordem,
           funcionario:funcionarios(*)
         `
-        )
-        .eq("ordem_servico_id", id)
-        .order("ordem");
-
-      if (!execError && executoresData) {
-        (data as any).executores = executoresData.map(
-          (e: any) => e.funcionario
+            )
+            .eq("ordem_servico_id", id)
+            .order("ordem")
         );
-      }
-    }
 
-    return data;
+        if (!execError && executoresData) {
+          (data as any).executores = executoresData.map(
+            (e: any) => e.funcionario
+          );
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Erro ao buscar ordem (timeout ou erro):", error);
+      return null;
+    }
   };
 
   // Criar nova ordem de serviço
@@ -325,35 +354,51 @@ export const useOrdemServico = () => {
 
   // Buscar famílias
   const listarFamilias = async (): Promise<Familia[]> => {
-    const { data, error } = await supabase
-      .from("familias")
-      .select("*")
-      .order("codigo");
+    await ensureSessionBeforeRequest();
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("familias")
+          .select("*")
+          .order("codigo")
+      );
 
-    if (error) {
-      console.error("Erro ao listar famílias:", error);
+      if (error) {
+        console.error("Erro ao listar famílias:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Erro ao listar famílias (timeout):", error);
       return [];
     }
-
-    return data || [];
   };
 
   // Buscar ativos por família
   const listarAtivosPorFamilia = async (
     familiaId: number
   ): Promise<Ativo[]> => {
-    const { data, error } = await supabase
-      .from("ativos")
-      .select("*")
-      .eq("familia_id", familiaId)
-      .order("codigo");
+    await ensureSessionBeforeRequest();
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("ativos")
+          .select("*")
+          .eq("familia_id", familiaId)
+          .order("codigo")
+      );
 
-    if (error) {
-      console.error("Erro ao listar ativos:", error);
+      if (error) {
+        console.error("Erro ao listar ativos:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Erro ao listar ativos (timeout):", error);
       return [];
     }
-
-    return data || [];
   };
 
   // Buscar todos os ativos
@@ -373,32 +418,48 @@ export const useOrdemServico = () => {
 
   // Buscar solicitantes
   const listarSolicitantes = async (): Promise<Solicitante[]> => {
-    const { data, error } = await supabase
-      .from("solicitantes")
-      .select("*")
-      .order("nome");
+    await ensureSessionBeforeRequest();
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("solicitantes")
+          .select("*")
+          .order("nome")
+      );
 
-    if (error) {
-      console.error("Erro ao listar solicitantes:", error);
+      if (error) {
+        console.error("Erro ao listar solicitantes:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Erro ao listar solicitantes (timeout):", error);
       return [];
     }
-
-    return data || [];
   };
 
   // Buscar funcionários
   const listarFuncionarios = async (): Promise<Funcionario[]> => {
-    const { data, error } = await supabase
-      .from("funcionarios")
-      .select("*")
-      .order("nome");
+    await ensureSessionBeforeRequest();
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("funcionarios")
+          .select("*")
+          .order("nome")
+      );
 
-    if (error) {
-      console.error("Erro ao listar funcionários:", error);
+      if (error) {
+        console.error("Erro ao listar funcionários:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Erro ao listar funcionários (timeout):", error);
       return [];
     }
-
-    return data || [];
   };
 
   return {
