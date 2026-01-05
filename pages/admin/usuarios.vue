@@ -180,14 +180,24 @@ const carregarUsuarios = async (tentativa = 1) => {
   try {
     carregando.value = true;
 
+    console.log(`=== Tentativa ${tentativa} de carregar usuários ===`);
+
     // Garantir sessão válida antes de carregar dados
-    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
+    console.log(`Sessão válida: ${sessionValid}`);
+    
     if (!sessionValid && tentativa === 1) {
       console.warn("Sessão inválida, tentando novamente...");
       return carregarUsuarios(2);
     }
+    
+    if (!sessionValid && tentativa >= 2) {
+      showError("Sessão expirada. Por favor, recarregue a página.");
+      return;
+    }
 
+    console.log("Passo 2: Carregando usuários...");
     const { data, error } = await supabase
       .from("user_profiles")
       .select("*")
@@ -195,19 +205,21 @@ const carregarUsuarios = async (tentativa = 1) => {
 
     if (error) throw error;
 
+    console.log("Passo 3: Usuários carregados com sucesso");
     usuarios.value = (data || []).map((u: any) => ({
       ...u,
       novoRole: u.role as UserRole,
     }));
   } catch (err) {
     console.error("Erro ao carregar usuários:", err);
-    
+
     // Se é a primeira tentativa, tentar novamente
     if (tentativa === 1) {
       console.log("Erro ao carregar, tentando novamente...");
       return carregarUsuarios(2);
     }
-    
+
+
     showError("Erro ao carregar usuários");
   } finally {
     carregando.value = false;

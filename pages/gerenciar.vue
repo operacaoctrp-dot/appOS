@@ -874,25 +874,38 @@ const excluirOrdem = async (ordem: OrdemServicoComRelacoes) => {
 const carregarOrdens = async (tentativa = 1) => {
   carregando.value = true;
 
-  // Timeout de 20 segundos
+  // Timeout de 25 segundos (muito maior para dar tempo ao refresh)
   const timeoutId = setTimeout(() => {
     if (carregando.value) {
       console.warn("Timeout ao carregar ordens");
       carregando.value = false;
-      showError("Tempo excedido ao carregar. Tente novamente.");
+      showError("Tempo excedido ao carregar. Tente novamente ou recarregue a página.");
     }
-  }, 20000);
+  }, 25000);
 
   try {
+    console.log(`=== Tentativa ${tentativa} de carregar ordens ===`);
+    
     // Garantir sessão válida antes de carregar dados
-    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
+    console.log(`Sessão válida: ${sessionValid}`);
+    
     if (!sessionValid && tentativa === 1) {
-      console.warn("Sessão inválida na primeira tentativa, tentando novamente...");
+      console.warn(
+        "Sessão inválida na primeira tentativa, tentando novamente..."
+      );
       clearTimeout(timeoutId);
       return carregarOrdens(2);
     }
+    
+    if (!sessionValid && tentativa >= 2) {
+      console.error("Falha ao renovar sessão após múltiplas tentativas");
+      showError("Sessão expirada. Por favor, recarregue a página.");
+      return;
+    }
 
+    console.log("Passo 2: Carregando ordens do banco...");
     const statusFiltro =
       filtroStatus.value === "todas"
         ? undefined
@@ -911,20 +924,18 @@ const carregarOrdens = async (tentativa = 1) => {
       filtroDataFim.value || undefined
     );
 
+    console.log("Passo 3: Dados carregados com sucesso");
     ordens.value = resultado.data;
     totalRegistros.value = resultado.totalCount;
     totalPaginas.value = resultado.totalPages;
   } catch (error) {
     console.error("Erro ao carregar ordens:", error);
 
-    // Se é a primeira tentativa, tentar renovar sessão e carregar novamente
+    // Se é a primeira tentativa, tentar novamente
     if (tentativa === 1) {
-      console.log("Erro detectado, tentando renovar sessão explicitamente...");
-      const renewed = await refreshSession();
-      if (renewed) {
-        console.log("Sessão renovada, tentando novamente...");
-        clearTimeout(timeoutId);
-        return carregarOrdens(2);
+      console.log("Erro na primeira tentativa, tentando novamente...");
+      clearTimeout(timeoutId);
+      return carregarOrdens(2);
       }
     }
 

@@ -42,55 +42,53 @@ export const useAuth = () => {
   // Garantir que a sessão está válida antes de fazer operações
   const ensureValidSession = async (): Promise<boolean> => {
     try {
-      // Primeiro, tentar obter a sessão atual
+      // SEMPRE tentar fazer refresh proativo de sessão
+      // Isso garante que o token está fresco
+      console.log("Fazendo refresh proativo de sessão...");
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error("Erro ao fazer refresh proativo:", refreshError);
+      }
+      
+      if (refreshData.session) {
+        session.value = refreshData.session;
+        user.value = refreshData.session.user;
+        console.log("Sessão renovada com sucesso (proativa)");
+        return true;
+      }
+
+      // Se o refresh não retornou sessão, tentar obter a sessão atual
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
 
       if (!currentSession) {
-        console.log("Sem sessão ativa, tentando refresh...");
-        const renewed = await refreshSession();
-        if (!renewed) {
-          console.warn("Falha ao renovar sessão, tentando novamente após 1 segundo...");
-          // Esperar um pouco e tentar novamente (pode estar sincronizando)
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return await refreshSession();
-        }
-        return renewed;
-      }
-
-      // Verificar se o token está próximo de expirar (menos de 5 minutos)
-      const expiresAt = currentSession.expires_at;
-      if (expiresAt) {
-        const now = Math.floor(Date.now() / 1000);
-        const timeUntilExpiry = expiresAt - now;
-
-        if (timeUntilExpiry < 300) {
-          // menos de 5 minutos
-          console.log(`Token expira em ${timeUntilExpiry}s, renovando...`);
-          const renewed = await refreshSession();
-          if (!renewed) {
-            console.warn("Falha ao renovar sessão, tentando novamente...");
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return await refreshSession();
-          }
-          return renewed;
-        }
+        console.log("Nenhuma sessão ativa após refresh");
+        return false;
       }
 
       // Sessão válida
       session.value = currentSession;
       user.value = currentSession.user;
+      console.log("Sessão ainda válida");
       return true;
     } catch (error) {
-      console.error("Erro ao verificar sessão:", error);
-      const renewed = await refreshSession();
-      if (!renewed) {
-        console.warn("Falha no refresh, tentando novamente...");
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return await refreshSession();
+      console.error("Erro crítico ao garantir sessão:", error);
+      // Última tentativa: fazer refresh explícito
+      try {
+        const { data, error: err } = await supabase.auth.refreshSession();
+        if (err || !data.session) {
+          console.error("Falha total na renovação de sessão");
+          return false;
+        }
+        session.value = data.session;
+        user.value = data.session.user;
+        return true;
+      } catch (finalError) {
+        console.error("Exceção final ao renovar:", finalError);
+        return false;
       }
-      return renewed;
     }
   };
 

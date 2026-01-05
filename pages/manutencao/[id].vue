@@ -496,14 +496,24 @@ const carregar = async (tentativa = 1) => {
     carregando.value = true;
     erro.value = "";
 
+    console.log(`=== Tentativa ${tentativa} de carregar dados ===`);
+
     // Garantir sessão válida antes de carregar dados
-    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
+    console.log(`Sessão válida: ${sessionValid}`);
+    
     if (!sessionValid && tentativa === 1) {
       console.warn("Sessão inválida, tentando novamente...");
       return carregar(2);
     }
+    
+    if (!sessionValid && tentativa >= 2) {
+      erro.value = "Sessão expirada. Por favor, recarregue a página.";
+      return;
+    }
 
+    console.log("Passo 2: Buscando ordem...");
     // Buscar ordem
     const ordemData = await buscarOrdem(Number(id));
     if (!ordemData) {
@@ -511,6 +521,7 @@ const carregar = async (tentativa = 1) => {
       return;
     }
 
+    console.log("Passo 3: Preenchendo formulário...");
     ordem.value = ordemData;
 
     // Preencher formulário se já tiver dados
@@ -548,13 +559,13 @@ const carregar = async (tentativa = 1) => {
     }
   } catch (error) {
     console.error("Erro ao carregar:", error);
-    
+
     // Se é a primeira tentativa, tentar novamente
     if (tentativa === 1) {
       console.log("Erro ao carregar, tentando novamente...");
       return carregar(2);
     }
-    
+
     erro.value = "Erro ao carregar dados";
   } finally {
     carregando.value = false;
