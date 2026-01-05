@@ -502,12 +502,12 @@ const carregar = async (tentativa = 1) => {
     console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
     console.log(`Sessão válida: ${sessionValid}`);
-    
+
     if (!sessionValid && tentativa === 1) {
       console.warn("Sessão inválida, tentando novamente...");
       return carregar(2);
     }
-    
+
     if (!sessionValid && tentativa >= 2) {
       erro.value = "Sessão expirada. Por favor, recarregue a página.";
       return;

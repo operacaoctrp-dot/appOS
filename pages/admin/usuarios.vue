@@ -186,12 +186,12 @@ const carregarUsuarios = async (tentativa = 1) => {
     console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
     console.log(`Sessão válida: ${sessionValid}`);
-    
+
     if (!sessionValid && tentativa === 1) {
       console.warn("Sessão inválida, tentando novamente...");
       return carregarUsuarios(2);
     }
-    
+
     if (!sessionValid && tentativa >= 2) {
       showError("Sessão expirada. Por favor, recarregue a página.");
       return;
@@ -218,7 +218,6 @@ const carregarUsuarios = async (tentativa = 1) => {
       console.log("Erro ao carregar, tentando novamente...");
       return carregarUsuarios(2);
     }
-
 
     showError("Erro ao carregar usuários");
   } finally {

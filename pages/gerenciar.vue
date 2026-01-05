@@ -885,12 +885,12 @@ const carregarOrdens = async (tentativa = 1) => {
 
   try {
     console.log(`=== Tentativa ${tentativa} de carregar ordens ===`);
-    
+
     // Garantir sessão válida antes de carregar dados
     console.log("Passo 1: Verificando sessão...");
     const sessionValid = await ensureValidSession();
     console.log(`Sessão válida: ${sessionValid}`);
-    
+
     if (!sessionValid && tentativa === 1) {
       console.warn(
         "Sessão inválida na primeira tentativa, tentando novamente..."
@@ -898,7 +898,7 @@ const carregarOrdens = async (tentativa = 1) => {
       clearTimeout(timeoutId);
       return carregarOrdens(2);
     }
-    
+
     if (!sessionValid && tentativa >= 2) {
       console.error("Falha ao renovar sessão após múltiplas tentativas");
       showError("Sessão expirada. Por favor, recarregue a página.");
@@ -936,7 +936,6 @@ const carregarOrdens = async (tentativa = 1) => {
       console.log("Erro na primeira tentativa, tentando novamente...");
       clearTimeout(timeoutId);
       return carregarOrdens(2);
-      }
     }
 
     showError("Erro ao carregar ordens. Tente recarregar a página.");

@@ -45,12 +45,13 @@ export const useAuth = () => {
       // SEMPRE tentar fazer refresh proativo de sessão
       // Isso garante que o token está fresco
       console.log("Fazendo refresh proativo de sessão...");
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
+      const { data: refreshData, error: refreshError } =
+        await supabase.auth.refreshSession();
+
       if (refreshError) {
         console.error("Erro ao fazer refresh proativo:", refreshError);
       }
-      
+
       if (refreshData.session) {
         session.value = refreshData.session;
         user.value = refreshData.session.user;
