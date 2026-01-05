@@ -31,36 +31,26 @@ export const useOrdemServico = () => {
   const listarOrdens = async (): Promise<OrdemServicoComRelacoes[]> => {
     console.log("Carregando lista de ordens...");
 
-    // Garantir sessão válida antes de fazer a requisição
-    await ensureSessionBeforeRequest();
+    const { data, error } = await supabase
+      .from("ordens_servico")
+      .select(
+        `
+        *,
+        familia:familias(*),
+        ativo:ativos(*),
+        solicitante:solicitantes(*),
+        recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
+        executor:funcionarios!ordens_servico_executor_id_fkey(*)
+      `
+      )
+      .order("numero", { ascending: false });
 
-    try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from("ordens_servico")
-          .select(
-            `
-            *,
-            familia:familias(*),
-            ativo:ativos(*),
-            solicitante:solicitantes(*),
-            recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
-            executor:funcionarios!ordens_servico_executor_id_fkey(*)
-          `
-          )
-          .order("numero", { ascending: false })
-      );
-
-      if (error) {
-        console.error("Erro ao listar ordens:", error);
-        return [];
-      }
-
-      return (data as OrdemServicoComRelacoes[]) || [];
-    } catch (error) {
-      console.error("Erro ao listar ordens (timeout ou erro):", error);
+    if (error) {
+      console.error("Erro ao listar ordens:", error);
       return [];
     }
+
+    return (data as OrdemServicoComRelacoes[]) || [];
   };
 
   // Listar ordens de serviço com paginação e busca
@@ -79,9 +69,6 @@ export const useOrdemServico = () => {
     totalPages: number;
   }> => {
     console.log(`Carregando página ${page} (${pageSize} itens)...`);
-
-    // Garantir sessão válida antes de fazer a requisição
-    await ensureSessionBeforeRequest();
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -138,92 +125,75 @@ export const useOrdemServico = () => {
 
     query = query.order("numero", { ascending: false }).range(from, to);
 
-    try {
-      const { data, error, count } = await withTimeout(query);
+    const { data, error, count } = await query;
 
-      if (error) {
-        console.error("Erro ao listar ordens paginado:", error);
-        return { data: [], totalCount: 0, totalPages: 0 };
-      }
-
-      const totalCount = count || 0;
-      const totalPages = Math.ceil(totalCount / pageSize);
-
-      console.log(
-        `Ordens carregadas: ${
-          data?.length || 0
-        } de ${totalCount} registros (página ${page}/${totalPages})`
-      );
-
-      return {
-        data: (data as OrdemServicoComRelacoes[]) || [],
-        totalCount,
-        totalPages,
-      };
-    } catch (error) {
-      console.error("Erro ao listar ordens (timeout ou erro):", error);
+    if (error) {
+      console.error("Erro ao listar ordens paginado:", error);
       return { data: [], totalCount: 0, totalPages: 0 };
     }
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    console.log(
+      `Ordens carregadas: ${
+        data?.length || 0
+      } de ${totalCount} registros (página ${page}/${totalPages})`
+    );
+
+    return {
+      data: (data as OrdemServicoComRelacoes[]) || [],
+      totalCount,
+      totalPages,
+    };
   };
 
   // Buscar ordem de serviço por ID
   const buscarOrdem = async (
     id: number
   ): Promise<OrdemServicoComRelacoes | null> => {
-    // Garantir sessão válida antes de fazer a requisição
-    await ensureSessionBeforeRequest();
-
-    try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from("ordens_servico")
-          .select(
-            `
-            *,
-            familia:familias(*),
-            ativo:ativos(*),
-            solicitante:solicitantes(*),
-            recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
-            executor:funcionarios!ordens_servico_executor_id_fkey(*)
-          `
-          )
-          .eq("id", id)
-          .single()
-      );
-
-      if (error) {
-        console.error("Erro ao buscar ordem:", error);
-        return null;
-      }
-
-      // Buscar executores da tabela de relacionamento
-      if (data) {
-        const { data: executoresData, error: execError } = await withTimeout(
-          supabase
-            .from("ordem_servico_executores")
-            .select(
-              `
-            funcionario_id,
-            ordem,
-          funcionario:funcionarios(*)
+    const { data, error } = await supabase
+      .from("ordens_servico")
+      .select(
         `
-            )
-            .eq("ordem_servico_id", id)
-            .order("ordem")
-        );
+        *,
+        familia:familias(*),
+        ativo:ativos(*),
+        solicitante:solicitantes(*),
+        recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
+        executor:funcionarios!ordens_servico_executor_id_fkey(*)
+      `
+      )
+      .eq("id", id)
+      .single();
 
-        if (!execError && executoresData) {
-          (data as any).executores = executoresData.map(
-            (e: any) => e.funcionario
-          );
-        }
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Erro ao buscar ordem (timeout ou erro):", error);
+    if (error) {
+      console.error("Erro ao buscar ordem:", error);
       return null;
     }
+
+    // Buscar executores da tabela de relacionamento
+    if (data) {
+      const { data: executoresData, error: execError } = await supabase
+        .from("ordem_servico_executores")
+        .select(
+          `
+          funcionario_id,
+          ordem,
+          funcionario:funcionarios(*)
+        `
+        )
+        .eq("ordem_servico_id", id)
+        .order("ordem");
+
+      if (!execError && executoresData) {
+        (data as any).executores = executoresData.map(
+          (e: any) => e.funcionario
+        );
+      }
+    }
+
+    return data;
   };
 
   // Criar nova ordem de serviço
