@@ -9,6 +9,25 @@ import type {
 
 export const useOrdemServico = () => {
   const supabase = useSupabase();
+  const { refreshSession } = useAuth();
+
+  // Garantir que a sessão está válida antes de fazer requisição
+  const ensureSessionBeforeRequest = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log(
+          "Sem sessão válida, tentando renovar..."
+        );
+        await refreshSession();
+      }
+    } catch (error) {
+      console.error("Erro ao verificar sessão:", error);
+    }
+  };
 
   // Buscar próximo número de OS
   const getProximoNumero = async (): Promise<number> => {
@@ -30,6 +49,10 @@ export const useOrdemServico = () => {
   // Listar todas as ordens de serviço com relações
   const listarOrdens = async (): Promise<OrdemServicoComRelacoes[]> => {
     console.log("Carregando lista de ordens...");
+    
+    // Garantir sessão válida antes de fazer a requisição
+    await ensureSessionBeforeRequest();
+    
     const { data, error } = await supabase
       .from("ordens_servico")
       .select(
@@ -68,6 +91,9 @@ export const useOrdemServico = () => {
     totalPages: number;
   }> => {
     console.log(`Carregando página ${page} (${pageSize} itens)...`);
+
+    // Garantir sessão válida antes de fazer a requisição
+    await ensureSessionBeforeRequest();
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -151,6 +177,9 @@ export const useOrdemServico = () => {
   const buscarOrdem = async (
     id: number
   ): Promise<OrdemServicoComRelacoes | null> => {
+    // Garantir sessão válida antes de fazer a requisição
+    await ensureSessionBeforeRequest();
+    
     const { data, error } = await supabase
       .from("ordens_servico")
       .select(

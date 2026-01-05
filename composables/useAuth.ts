@@ -145,15 +145,15 @@ export const useAuth = () => {
           document.addEventListener("visibilitychange", async () => {
             if (document.visibilityState === "visible" && user.value) {
               console.log(
-                "Página voltou a ficar visível, verificando sessão..."
+                "Página voltou a ficar visível, renovando sessão..."
               );
-              await ensureValidSession();
+              await refreshSession();
             }
           });
 
           // Renovar sessão quando o usuário interage após período de inatividade
           let lastActivity = Date.now();
-          const checkInactivity = () => {
+          const checkInactivity = async () => {
             const now = Date.now();
             const inactiveTime = now - lastActivity;
             // Se ficou inativo por mais de 1 minuto, renovar sessão
@@ -163,7 +163,7 @@ export const useAuth = () => {
                   inactiveTime / 1000
                 )}s de inatividade, renovando sessão...`
               );
-              ensureValidSession();
+              await refreshSession();
             }
             lastActivity = now;
           };
