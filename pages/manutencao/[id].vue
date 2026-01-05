@@ -470,6 +470,7 @@ const id = route.params.id as string;
 const { buscarOrdem, atualizarOrdem } = useOrdemServico();
 const supabase = useSupabase();
 const { success, error: showError } = useNotification();
+const { ensureValidSession } = useAuth();
 
 const ordem = ref<OrdemServicoComRelacoes | null>(null);
 const executores = ref<any[]>([]);
@@ -494,6 +495,9 @@ const carregar = async () => {
   try {
     carregando.value = true;
     erro.value = "";
+
+    // Garantir sessão válida antes de carregar dados
+    await ensureValidSession();
 
     // Buscar ordem
     const ordemData = await buscarOrdem(Number(id));

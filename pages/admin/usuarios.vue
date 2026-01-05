@@ -168,7 +168,7 @@ interface UsuarioComNovoRole extends UserProfile {
   novoRole: UserRole;
 }
 
-const { user } = useAuth();
+const { user, ensureValidSession } = useAuth();
 const { success, error: showError } = useNotification();
 const supabase = useSupabase();
 
@@ -179,6 +179,9 @@ const usuarios = ref<UsuarioComNovoRole[]>([]);
 const carregarUsuarios = async () => {
   try {
     carregando.value = true;
+
+    // Garantir sessão válida antes de carregar dados
+    await ensureValidSession();
 
     const { data, error } = await supabase
       .from("user_profiles")

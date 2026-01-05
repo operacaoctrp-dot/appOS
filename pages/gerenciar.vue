@@ -628,7 +628,7 @@ const {
 } = useOrdemServico();
 const { confirm: modalConfirm } = useModal();
 const { success, error: showError } = useNotification();
-const { isManutencao, isAdmin, refreshSession } = useAuth();
+const { isManutencao, isAdmin, refreshSession, ensureValidSession } = useAuth();
 
 const ordens = ref<OrdemServicoComRelacoes[]>([]);
 const solicitantes = ref<any[]>([]);
@@ -884,6 +884,8 @@ const carregarOrdens = async (tentativa = 1) => {
   }, 15000);
 
   try {
+    // Garantir sessão válida antes de carregar dados
+    await ensureValidSession();
     const statusFiltro =
       filtroStatus.value === "todas"
         ? undefined

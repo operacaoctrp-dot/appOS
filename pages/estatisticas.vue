@@ -891,6 +891,7 @@ definePageMeta({
 import { useOffline } from "~/composables/useOffline";
 const { listarOrdens } = useOrdemServico();
 const { isOnline } = useOffline();
+const { ensureValidSession } = useAuth();
 const ordens = ref<OrdemServicoComRelacoes[]>([]);
 const carregando = ref(true);
 const erroCarregamento = ref(false);
@@ -1245,6 +1246,8 @@ const carregarDados = async () => {
     }
   }, 10000); // 10 segundos
   try {
+    // Garantir sessão válida antes de carregar dados
+    await ensureValidSession();
     ordens.value = await listarOrdens();
   } catch (error) {
     console.error("Erro ao carregar dados:", error);

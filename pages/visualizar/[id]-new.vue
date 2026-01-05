@@ -273,12 +273,15 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const { buscarOrdem } = useOrdemServico();
+const { ensureValidSession } = useAuth();
 
 const ordem = ref<OrdemServicoComRelacoes | null>(null);
 
 const carregarOrdem = async () => {
   const id = parseInt(route.params.id as string);
   if (id) {
+    // Garantir sessão válida antes de carregar dados
+    await ensureValidSession();
     ordem.value = await buscarOrdem(id);
     if (!ordem.value) {
       alert("Ordem de serviço não encontrada!");
