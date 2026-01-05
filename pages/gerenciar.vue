@@ -874,18 +874,25 @@ const excluirOrdem = async (ordem: OrdemServicoComRelacoes) => {
 const carregarOrdens = async (tentativa = 1) => {
   carregando.value = true;
 
-  // Timeout de 15 segundos
+  // Timeout de 20 segundos
   const timeoutId = setTimeout(() => {
     if (carregando.value) {
       console.warn("Timeout ao carregar ordens");
       carregando.value = false;
       showError("Tempo excedido ao carregar. Tente novamente.");
     }
-  }, 15000);
+  }, 20000);
 
   try {
     // Garantir sessão válida antes de carregar dados
-    await ensureValidSession();
+    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid && tentativa === 1) {
+      console.warn("Sessão inválida na primeira tentativa, tentando novamente...");
+      clearTimeout(timeoutId);
+      return carregarOrdens(2);
+    }
+
     const statusFiltro =
       filtroStatus.value === "todas"
         ? undefined
@@ -912,7 +919,7 @@ const carregarOrdens = async (tentativa = 1) => {
 
     // Se é a primeira tentativa, tentar renovar sessão e carregar novamente
     if (tentativa === 1) {
-      console.log("Tentando renovar sessão...");
+      console.log("Erro detectado, tentando renovar sessão explicitamente...");
       const renewed = await refreshSession();
       if (renewed) {
         console.log("Sessão renovada, tentando novamente...");

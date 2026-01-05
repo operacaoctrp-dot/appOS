@@ -491,13 +491,18 @@ const formData = reactive({
 });
 
 // Carregar dados
-const carregar = async () => {
+const carregar = async (tentativa = 1) => {
   try {
     carregando.value = true;
     erro.value = "";
 
     // Garantir sessão válida antes de carregar dados
-    await ensureValidSession();
+    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid && tentativa === 1) {
+      console.warn("Sessão inválida, tentando novamente...");
+      return carregar(2);
+    }
 
     // Buscar ordem
     const ordemData = await buscarOrdem(Number(id));
@@ -543,6 +548,13 @@ const carregar = async () => {
     }
   } catch (error) {
     console.error("Erro ao carregar:", error);
+    
+    // Se é a primeira tentativa, tentar novamente
+    if (tentativa === 1) {
+      console.log("Erro ao carregar, tentando novamente...");
+      return carregar(2);
+    }
+    
     erro.value = "Erro ao carregar dados";
   } finally {
     carregando.value = false;

@@ -49,7 +49,14 @@ export const useAuth = () => {
 
       if (!currentSession) {
         console.log("Sem sessão ativa, tentando refresh...");
-        return await refreshSession();
+        const renewed = await refreshSession();
+        if (!renewed) {
+          console.warn("Falha ao renovar sessão, tentando novamente após 1 segundo...");
+          // Esperar um pouco e tentar novamente (pode estar sincronizando)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return await refreshSession();
+        }
+        return renewed;
       }
 
       // Verificar se o token está próximo de expirar (menos de 5 minutos)
@@ -61,7 +68,13 @@ export const useAuth = () => {
         if (timeUntilExpiry < 300) {
           // menos de 5 minutos
           console.log(`Token expira em ${timeUntilExpiry}s, renovando...`);
-          return await refreshSession();
+          const renewed = await refreshSession();
+          if (!renewed) {
+            console.warn("Falha ao renovar sessão, tentando novamente...");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return await refreshSession();
+          }
+          return renewed;
         }
       }
 
@@ -71,7 +84,13 @@ export const useAuth = () => {
       return true;
     } catch (error) {
       console.error("Erro ao verificar sessão:", error);
-      return await refreshSession();
+      const renewed = await refreshSession();
+      if (!renewed) {
+        console.warn("Falha no refresh, tentando novamente...");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return await refreshSession();
+      }
+      return renewed;
     }
   };
 

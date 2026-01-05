@@ -1235,7 +1235,7 @@ const tempoStats = computed(() => {
 });
 
 let timeoutId: any = null;
-const carregarDados = async () => {
+const carregarDados = async (tentativa = 1) => {
   carregando.value = true;
   erroCarregamento.value = false;
   clearTimeout(timeoutId);
@@ -1244,13 +1244,28 @@ const carregarDados = async () => {
       erroCarregamento.value = true;
       carregando.value = false;
     }
-  }, 10000); // 10 segundos
+  }, 15000); // 15 segundos
   try {
     // Garantir sessão válida antes de carregar dados
-    await ensureValidSession();
+    console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+    const sessionValid = await ensureValidSession();
+    if (!sessionValid && tentativa === 1) {
+      console.warn("Sessão inválida, tentando novamente...");
+      clearTimeout(timeoutId);
+      return carregarDados(2);
+    }
+
     ordens.value = await listarOrdens();
   } catch (error) {
     console.error("Erro ao carregar dados:", error);
+
+    // Se é a primeira tentativa, tentar novamente
+    if (tentativa === 1) {
+      console.log("Erro ao carregar, tentando novamente...");
+      clearTimeout(timeoutId);
+      return carregarDados(2);
+    }
+
     erroCarregamento.value = true;
   } finally {
     carregando.value = false;

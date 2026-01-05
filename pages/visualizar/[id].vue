@@ -359,23 +359,37 @@ const ordem = ref<OrdemServicoComRelacoes | null>(null);
 
 const { error: modalError } = useModal();
 
-const carregarOrdem = async () => {
+const carregarOrdem = async (tentativa = 1) => {
   const id = parseInt(route.params.id as string);
   if (id) {
-    // Garantir sessão válida antes de carregar dados
-    await ensureValidSession();
-    ordem.value = await buscarOrdem(id);
+    try {
+      // Garantir sessão válida antes de carregar dados
+      console.log(`Tentativa ${tentativa}: Verificando sessão...`);
+      const sessionValid = await ensureValidSession();
+      if (!sessionValid && tentativa === 1) {
+        console.warn("Sessão inválida, tentando novamente...");
+        return carregarOrdem(2);
+      }
 
-    if (!ordem.value) {
-      return;
-    }
+      ordem.value = await buscarOrdem(id);
 
-    // Verificar se a OS está fechada
-    if (!ordem.value.data_liberacao) {
-      await modalError(
-        "Esta OS ainda não foi fechada! A visualização só está disponível para OS fechadas."
-      );
-      router.push("/gerenciar");
+      if (!ordem.value) {
+        return;
+      }
+
+      // Verificar se a OS está fechada
+      if (!ordem.value.data_liberacao) {
+        await modalError(
+          "Esta OS ainda não foi fechada! A visualização só está disponível para OS fechadas."
+        );
+        router.push("/gerenciar");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar ordem:", error);
+      if (tentativa === 1) {
+        console.log("Erro ao carregar, tentando novamente...");
+        return carregarOrdem(2);
+      }
     }
   }
 };
