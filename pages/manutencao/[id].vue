@@ -548,7 +548,7 @@ const carregar = async (tentativa = 1) => {
     const select = `
       *,
       familia:familia_id(id,familia),
-      ativo:ativo_id(id,codigo,descricao),
+      ativo:ativo_id(id,codigo,nome),
       solicitante:solicitante_id(id,nome),
       recebido_por:recebido_por_id(id,nome),
       executor:executor_id(id,nome),
