@@ -152,51 +152,71 @@ export const useOrdemServico = () => {
   const buscarOrdem = async (
     id: number
   ): Promise<OrdemServicoComRelacoes | null> => {
-    const { data, error } = await supabase
-      .from("ordens_servico")
-      .select(
-        `
-        *,
-        familia:familias(*),
-        ativo:ativos(*),
-        solicitante:solicitantes(*),
-        recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
-        executor:funcionarios!ordens_servico_executor_id_fkey(*)
-      `
-      )
-      .eq("id", id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Erro ao buscar ordem:", error);
-      return null;
-    }
-
-    if (!data) {
-      console.error("Ordem de serviço não encontrada para ID:", id);
-      return null;
-    }
-
-    // Buscar executores da tabela de relacionamento
-    if (data) {
-      const { data: executoresData, error: execError } = await supabase
-        .from("ordem_servico_executores")
+    console.log(`[buscarOrdem] Iniciando busca da ordem com ID: ${id}`);
+    
+    try {
+      console.log("[buscarOrdem] Executando query SELECT...");
+      const { data, error } = await supabase
+        .from("ordens_servico")
         .select(
           `
-          funcionario_id,
-          ordem,
-          funcionario:funcionarios(*)
+          *,
+          familia:familias(*),
+          ativo:ativos(*),
+          solicitante:solicitantes(*),
+          recebido_por:funcionarios!ordens_servico_recebido_por_id_fkey(*),
+          executor:funcionarios!ordens_servico_executor_id_fkey(*)
         `
         )
-        .eq("ordem_servico_id", id)
-        .order("ordem");
+        .eq("id", id)
+        .maybeSingle();
 
-      if (!execError && executoresData) {
-        (data as any).executores = executoresData.map(
-          (e: any) => e.funcionario
-        );
+      if (error) {
+        console.error("[buscarOrdem] Erro ao buscar ordem:", error);
+        return null;
       }
+
+      if (!data) {
+        console.error("[buscarOrdem] Ordem de serviço não encontrada para ID:", id);
+        return null;
+      }
+
+      console.log("[buscarOrdem] Ordem encontrada:", data);
+
+      // Buscar executores da tabela de relacionamento
+      if (data) {
+        console.log("[buscarOrdem] Carregando executores...");
+        const { data: executoresData, error: execError } = await supabase
+          .from("ordem_servico_executores")
+          .select(
+            `
+            funcionario_id,
+            ordem,
+            funcionario:funcionarios(*)
+          `
+          )
+          .eq("ordem_servico_id", id)
+          .order("ordem");
+
+        if (execError) {
+          console.warn("[buscarOrdem] Erro ao carregar executores:", execError);
+        } else if (executoresData && executoresData.length > 0) {
+          console.log("[buscarOrdem] Executores carregados:", executoresData.length);
+          (data as any).executores = executoresData.map(
+            (e: any) => e.funcionario
+          );
+        } else {
+          console.log("[buscarOrdem] Nenhum executor encontrado");
+        }
+      }
+
+      console.log("[buscarOrdem] Retornando ordem com sucesso");
+      return data;
+    } catch (err) {
+      console.error("[buscarOrdem] Exceção:", err);
+      return null;
     }
+  };
 
     return data;
   };
