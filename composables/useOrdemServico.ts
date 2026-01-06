@@ -165,10 +165,15 @@ export const useOrdemServico = () => {
       `
       )
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Erro ao buscar ordem:", error);
+      return null;
+    }
+
+    if (!data) {
+      console.error("Ordem de serviço não encontrada para ID:", id);
       return null;
     }
 
