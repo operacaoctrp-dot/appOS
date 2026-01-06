@@ -492,22 +492,45 @@ const formData = reactive({
 
 // Função auxiliar para fazer queries diretas via REST API (bypass do SDK que está com problemas)
 const fetchSupabase = async (endpoint: string, options = {}) => {
-  const response = await fetch(`${supabase.supabaseUrl}/rest/v1/${endpoint}`, {
-    headers: {
-      apikey: supabase.supabaseKey || "",
-      Authorization: `Bearer ${supabase.supabaseKey || ""}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation",
-      ...((options as any).headers || {}),
-    },
-    ...(options as any),
-  });
+  console.log(
+    `[fetchSupabase] Iniciando requisição: ${endpoint.substring(0, 100)}...`
+  );
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  const url = `${supabase.supabaseUrl}/rest/v1/${endpoint}`;
+  console.log(`[fetchSupabase] URL completa: ${url.substring(0, 150)}...`);
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        apikey: supabase.supabaseKey || "",
+        Authorization: `Bearer ${supabase.supabaseKey || ""}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+        ...((options as any).headers || {}),
+      },
+      ...(options as any),
+    });
+
+    console.log(`[fetchSupabase] Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[fetchSupabase] Erro HTTP ${response.status}:`, errorText);
+      throw new Error(
+        `HTTP ${response.status}: ${response.statusText} - ${errorText}`
+      );
+    }
+
+    const data = await response.json();
+    console.log(
+      `[fetchSupabase] Dados recebidos:`,
+      Array.isArray(data) ? `${data.length} registros` : "objeto único"
+    );
+    return data;
+  } catch (error) {
+    console.error(`[fetchSupabase] Exceção:`, error);
+    throw error;
   }
-
-  return response.json();
 };
 
 // Carregar dados
@@ -519,15 +542,17 @@ const carregar = async (tentativa = 1) => {
     console.log(`Carregando ordem de serviço #${id}...`);
 
     // Garantir sessão válida
+    console.log("[1/4] Verificando sessão...");
     try {
       await ensureValidSession();
+      console.log("[1/4] ✓ Sessão válida");
     } catch (sessErr) {
-      console.warn("Erro ao verificar sessão, continuando:", sessErr);
+      console.warn("[1/4] ⚠ Erro ao verificar sessão, continuando:", sessErr);
     }
 
     // SOLUÇÃO: Usar fetch direto para buscar a ordem (SDK está com problemas)
-    console.log("Buscando dados da ordem...");
-    
+    console.log("[2/4] Buscando dados da ordem...");
+
     // Query complexa com todos os JOINs necessários
     const select = `
       *,
@@ -543,16 +568,20 @@ const carregar = async (tentativa = 1) => {
       `ordens_servico?id=eq.${id}&select=${select}&limit=1`
     );
 
+    console.log("[2/4] ✓ Resposta recebida da API");
+
     if (!ordemArray || ordemArray.length === 0) {
+      console.error("[2/4] ✗ Ordem não encontrada");
       erro.value = "Ordem de serviço não encontrada";
       carregando.value = false;
       return;
     }
 
     const ordemData = ordemArray[0];
-    console.log("Ordem carregada com sucesso");
+    console.log("[2/4] ✓ Ordem carregada:", ordemData.numero || ordemData.id);
 
     // Processar dados
+    console.log("[3/4] Processando dados da ordem...");
     ordem.value = {
       ...ordemData,
       familia: ordemData.familia || null,
@@ -560,10 +589,12 @@ const carregar = async (tentativa = 1) => {
       solicitante: ordemData.solicitante || null,
       recebido_por: ordemData.recebido_por || null,
       executor: ordemData.executor || null,
-      executores_lista: ordemData.executores_tabela?.map((e: any) => e.funcionario) || [],
+      executores_lista:
+        ordemData.executores_tabela?.map((e: any) => e.funcionario) || [],
     };
 
     // Preencher formulário
+    console.log("[3/4] Preenchendo formulário...");
     if (ordemData.descricao_servico) {
       formData.descricao_servico = ordemData.descricao_servico;
       formData.executores = ordemData.executor_id
@@ -583,26 +614,27 @@ const carregar = async (tentativa = 1) => {
     } else {
       adicionarInsumo();
     }
+    console.log("[3/4] ✓ Formulário preenchido");
 
     // Buscar executores usando fetch direto também
-    console.log("Carregando lista de executores...");
+    console.log("[4/4] Carregando lista de executores...");
     try {
       const execData = await fetchSupabase(
-        'funcionarios?or=(funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%)&order=nome.asc'
+        "funcionarios?or=(funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%)&order=nome.asc"
       );
-      
+
       if (execData) {
-        console.log(`${execData.length} executores carregados`);
+        console.log(`[4/4] ✓ ${execData.length} executores carregados`);
         executores.value = execData;
       }
     } catch (execErr) {
-      console.warn("Erro ao carregar executores:", execErr);
+      console.warn("[4/4] ⚠ Erro ao carregar executores:", execErr);
       // Continuar mesmo sem executores
     }
 
-    console.log("Carregamento concluído!");
+    console.log("✅ Carregamento concluído com sucesso!");
   } catch (error) {
-    console.error("Erro ao carregar:", error);
+    console.error("❌ Erro ao carregar:", error);
 
     // Se é a primeira tentativa, tentar novamente
     if (tentativa === 1) {
@@ -610,7 +642,8 @@ const carregar = async (tentativa = 1) => {
       return carregar(2);
     }
 
-    erro.value = error instanceof Error ? error.message : "Erro ao carregar dados";
+    erro.value =
+      error instanceof Error ? error.message : "Erro ao carregar dados";
   } finally {
     carregando.value = false;
   }
