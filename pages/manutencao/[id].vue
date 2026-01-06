@@ -569,18 +569,18 @@ const carregar = async (tentativa = 1) => {
         `${supabase.supabaseUrl}/rest/v1/ordens_servico?id=eq.${id}&select=id,numero&limit=1`,
         {
           headers: {
-            'apikey': supabase.supabaseKey || '',
-            'Authorization': `Bearer ${supabase.supabaseKey || ''}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-          }
+            apikey: supabase.supabaseKey || "",
+            Authorization: `Bearer ${supabase.supabaseKey || ""}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation",
+          },
         }
       );
       const fetchData = await fetchResponse.json();
       console.timeEnd("Fetch direto");
       console.log("Resultado fetch direto:", fetchData);
       console.log("Status fetch:", fetchResponse.status);
-      
+
       if (fetchData && fetchData.length > 0) {
         console.log("✅ FETCH DIRETO FUNCIONOU!");
         // Aqui podemos usar os dados
@@ -588,9 +588,12 @@ const carregar = async (tentativa = 1) => {
     } catch (fetchErr) {
       console.error("Erro no fetch direto:", fetchErr);
     }
-    
+
     // Teste 1: COUNT simples (via SDK - para comparação)
     console.log("Teste 1 (SDK): Contando registros na tabela...");
+    console.time("Count query");
+    try {
+      const { count, error: countError } = await supabase
         .from("ordens_servico")
         .select("*", { count: "exact", head: true });
       console.timeEnd("Count query");
@@ -624,8 +627,6 @@ const carregar = async (tentativa = 1) => {
       .select("id, numero")
       .eq("id", Number(id))
       .limit(1);
-
-    console.timeEnd("Query direta Supabase");
 
     console.timeEnd("Query direta Supabase");
     console.log("Resultado query direta:", testDirect);
