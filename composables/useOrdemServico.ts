@@ -156,21 +156,51 @@ export const useOrdemServico = () => {
       console.log(`[buscarOrdem] Iniciando busca da ordem com ID: ${id}`);
 
       // Primeira query: dados principais - query simples
-      console.log("[buscarOrdem] Query 1: Buscando dados principais...");
+      console.log("[buscarOrdem] Query 1: Teste básico - apenas ID...");
       console.time("[buscarOrdem] Query 1 tempo");
-      
-      const { data: mainData, error: mainError, status } = await supabase
+
+      const { data: testData, error: testError } = await supabase
         .from("ordens_servico")
-        .select("id,numero,sintoma_defeito,familia_id,ativo_id,solicitante_id,recebido_por_id,executor_id,descricao_servico,insumos,observacoes,data_inicio,tempo_inicio,data_fim,tempo_fim,dados_manutencao_preenchidos")
+        .select("id")
         .eq("id", id)
         .maybeSingle();
 
       console.timeEnd("[buscarOrdem] Query 1 tempo");
-      console.log("[buscarOrdem] Query 1 status:", status);
+
+      if (testError) {
+        console.error("[buscarOrdem] Erro no teste básico:", testError);
+        return null;
+      }
+
+      if (!testData) {
+        console.error("[buscarOrdem] Ordem não encontrada");
+        return null;
+      }
+
+      console.log("[buscarOrdem] Teste OK, buscando dados completos...");
+      console.time("[buscarOrdem] Query 2 tempo");
+
+      const {
+        data: mainData,
+        error: mainError,
+        status,
+      } = await supabase
+        .from("ordens_servico")
+        .select(
+          "id,numero,sintoma_defeito,familia_id,ativo_id,solicitante_id,recebido_por_id,executor_id,descricao_servico,insumos,observacoes,data_inicio,tempo_inicio,data_fim,tempo_fim,dados_manutencao_preenchidos"
+        )
+        .eq("id", id)
+        .maybeSingle();
+
+      console.timeEnd("[buscarOrdem] Query 2 tempo");
+      console.log("[buscarOrdem] Query 2 status:", status);
 
       if (mainError) {
         console.error("[buscarOrdem] Erro na query principal:", mainError);
-        console.error("[buscarOrdem] Erro detalhado:", JSON.stringify(mainError));
+        console.error(
+          "[buscarOrdem] Erro detalhado:",
+          JSON.stringify(mainError)
+        );
         return null;
       }
 
