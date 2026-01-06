@@ -552,7 +552,7 @@ const carregar = async (tentativa = 1) => {
       solicitante:solicitante_id(id,nome),
       recebido_por:recebido_por_id(id,nome),
       executor:executor_id(id,nome),
-      executores_tabela:ordem_executores(funcionario:funcionario_id(id,nome))
+      executores_tabela:ordem_servico_executores(funcionario:funcionario_id(id,nome))
     `.replace(/\s+/g, "");
 
     const ordemArray = await fetchSupabase(
