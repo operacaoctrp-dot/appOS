@@ -1,9 +1,4 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  // No servidor, não bloquear navegação (SSR)
-  if (process.server) {
-    return;
-  }
-
   const { user, initAuth, authInitialized } = useAuth();
 
   // Garantir inicialização apenas uma vez
