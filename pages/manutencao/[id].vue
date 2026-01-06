@@ -500,7 +500,23 @@ const carregar = async (tentativa = 1) => {
 
     // Garantir sessão válida antes de carregar dados
     console.log("Passo 1: Verificando sessão...");
-    const sessionValid = await ensureValidSession();
+    let sessionValid = false;
+    try {
+      // Criar promise que resolve com timeout
+      const sessionPromise = ensureValidSession();
+      const timeoutPromise = new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          console.warn("Timeout ao verificar sessão, continuando mesmo assim...");
+          resolve(true);
+        }, 5000)
+      );
+      
+      sessionValid = await Promise.race([sessionPromise, timeoutPromise]);
+    } catch (sessErr) {
+      console.error("Erro ao verificar sessão:", sessErr);
+      sessionValid = true; // Assumir que está válido e continuar
+    }
+    
     console.log(`Sessão válida: ${sessionValid}`);
 
     if (!sessionValid && tentativa === 1) {
