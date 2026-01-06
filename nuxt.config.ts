@@ -2,7 +2,8 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
-  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt", "@vite-pwa/nuxt"],
+  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt"],
+  // Temporariamente desabilitado: "@vite-pwa/nuxt"
 
   runtimeConfig: {
     public: {
@@ -11,6 +12,8 @@ export default defineNuxtConfig({
     },
   },
 
+  /*
+  // PWA TEMPORARIAMENTE DESABILITADO PARA DEBUG
   pwa: {
     registerType: "autoUpdate",
     manifest: {
@@ -95,4 +98,5 @@ export default defineNuxtConfig({
       type: "module",
     },
   },
+  */
 });
