@@ -1,23 +1,32 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { user, initAuth, authInitialized } = useAuth();
-
   // Rotas públicas que não precisam de autenticação
   const publicRoutes = ["/login", "/reset-password"];
   const isPublicRoute = publicRoutes.includes(to.path);
 
-  // No servidor (SSR), permitir navegação para rotas públicas
-  // Para rotas privadas, deixar o cliente verificar autenticação
+  // No servidor (SSR), verificar se há cookie de sessão do Supabase
   if (process.server) {
     // Se está tentando acessar rota pública, permitir
     if (isPublicRoute) {
       return;
     }
-    // Para rotas privadas, renderizar a página e deixar o cliente verificar
-    // Se não estiver autenticado, o cliente vai redirecionar
+
+    // Para rotas privadas no servidor, verificar se há cookies de sessão
+    const cookies = useRequestHeaders(['cookie']);
+    const hasCookie = cookies.cookie?.includes('sb-') || false;
+    
+    // Se não há cookie, redirecionar para login
+    if (!hasCookie) {
+      return navigateTo('/login');
+    }
+    
+    // Se há cookie, deixar renderizar (o cliente vai validar depois)
     return;
   }
 
-  // No cliente, garantir inicialização apenas uma vez
+  // No cliente, usar a lógica normal de autenticação
+  const { user, initAuth, authInitialized } = useAuth();
+
+  // Garantir inicialização apenas uma vez
   if (!authInitialized.value) {
     await initAuth();
   }
