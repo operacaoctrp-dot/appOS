@@ -96,6 +96,11 @@ export const useAuth = () => {
 
   // Inicializar sessão
   const initAuth = async () => {
+    // No servidor, não inicializar (SSR não tem acesso ao localStorage)
+    if (process.server) {
+      return;
+    }
+
     try {
       const {
         data: { session: currentSession },
