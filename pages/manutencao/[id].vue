@@ -538,15 +538,18 @@ const carregar = async (tentativa = 1) => {
     // TESTE ULTRA SIMPLES - Testar se Supabase está respondendo
     console.log("=== TESTE CONEXÃO SUPABASE ===");
     console.log("Supabase URL:", supabase.supabaseUrl);
-    console.log("Supabase Key (primeiros 20 chars):", supabase.supabaseKey?.substring(0, 20) + "...");
-    
+    console.log(
+      "Supabase Key (primeiros 20 chars):",
+      supabase.supabaseKey?.substring(0, 20) + "..."
+    );
+
     try {
       console.time("Teste ping Supabase");
       const response = await fetch(`${supabase.supabaseUrl}/rest/v1/`, {
         headers: {
-          'apikey': supabase.supabaseKey || '',
-          'Authorization': `Bearer ${supabase.supabaseKey || ''}`
-        }
+          apikey: supabase.supabaseKey || "",
+          Authorization: `Bearer ${supabase.supabaseKey || ""}`,
+        },
       });
       console.timeEnd("Teste ping Supabase");
       console.log("Status da resposta:", response.status);
@@ -557,6 +560,38 @@ const carregar = async (tentativa = 1) => {
 
     // TESTE QUERY DIRETA
     console.log("=== TESTE QUERY DIRETA ===");
+    
+    // Teste 1: COUNT simples
+    console.log("Teste 1: Contando registros na tabela...");
+    console.time("Count query");
+    try {
+      const { count, error: countError } = await supabase
+        .from("ordens_servico")
+        .select("*", { count: "exact", head: true });
+      console.timeEnd("Count query");
+      console.log("Total de registros:", count);
+      console.log("Erro no count:", countError);
+    } catch (countErr) {
+      console.error("Exceção no count:", countErr);
+    }
+    
+    // Teste 2: SELECT simples sem WHERE
+    console.log("Teste 2: SELECT sem filtro (limit 1)...");
+    console.time("Select sem filtro");
+    try {
+      const { data: dataNoFilter, error: errorNoFilter } = await supabase
+        .from("ordens_servico")
+        .select("id")
+        .limit(1);
+      console.timeEnd("Select sem filtro");
+      console.log("Resultado sem filtro:", dataNoFilter);
+      console.log("Erro sem filtro:", errorNoFilter);
+    } catch (noFilterErr) {
+      console.error("Exceção sem filtro:", noFilterErr);
+    }
+
+    // Teste 3: SELECT com WHERE
+    console.log("Teste 3: SELECT com WHERE id =", id);
     console.time("Query direta Supabase");
 
     const { data: testDirect, error: testError } = await supabase
@@ -564,6 +599,8 @@ const carregar = async (tentativa = 1) => {
       .select("id, numero")
       .eq("id", Number(id))
       .limit(1);
+
+    console.timeEnd("Query direta Supabase");
 
     console.timeEnd("Query direta Supabase");
     console.log("Resultado query direta:", testDirect);
