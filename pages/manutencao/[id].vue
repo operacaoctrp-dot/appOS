@@ -541,17 +541,8 @@ const carregar = async (tentativa = 1) => {
 
     console.log(`Carregando ordem de serviço #${id}...`);
 
-    // Garantir sessão válida
-    console.log("[1/4] Verificando sessão...");
-    try {
-      await ensureValidSession();
-      console.log("[1/4] ✓ Sessão válida");
-    } catch (sessErr) {
-      console.warn("[1/4] ⚠ Erro ao verificar sessão, continuando:", sessErr);
-    }
-
     // SOLUÇÃO: Usar fetch direto para buscar a ordem (SDK está com problemas)
-    console.log("[2/4] Buscando dados da ordem...");
+    console.log("[1/3] Buscando dados da ordem...");
 
     // Query complexa com todos os JOINs necessários
     const select = `
@@ -568,20 +559,20 @@ const carregar = async (tentativa = 1) => {
       `ordens_servico?id=eq.${id}&select=${select}&limit=1`
     );
 
-    console.log("[2/4] ✓ Resposta recebida da API");
+    console.log("[1/3] ✓ Resposta recebida da API");
 
     if (!ordemArray || ordemArray.length === 0) {
-      console.error("[2/4] ✗ Ordem não encontrada");
+      console.error("[1/3] ✗ Ordem não encontrada");
       erro.value = "Ordem de serviço não encontrada";
       carregando.value = false;
       return;
     }
 
     const ordemData = ordemArray[0];
-    console.log("[2/4] ✓ Ordem carregada:", ordemData.numero || ordemData.id);
+    console.log("[1/3] ✓ Ordem carregada:", ordemData.numero || ordemData.id);
 
     // Processar dados
-    console.log("[3/4] Processando dados da ordem...");
+    console.log("[2/3] Processando dados da ordem...");
     ordem.value = {
       ...ordemData,
       familia: ordemData.familia || null,
@@ -594,7 +585,7 @@ const carregar = async (tentativa = 1) => {
     };
 
     // Preencher formulário
-    console.log("[3/4] Preenchendo formulário...");
+    console.log("[2/3] Preenchendo formulário...");
     if (ordemData.descricao_servico) {
       formData.descricao_servico = ordemData.descricao_servico;
       formData.executores = ordemData.executor_id
@@ -614,21 +605,21 @@ const carregar = async (tentativa = 1) => {
     } else {
       adicionarInsumo();
     }
-    console.log("[3/4] ✓ Formulário preenchido");
+    console.log("[2/3] ✓ Formulário preenchido");
 
     // Buscar executores usando fetch direto também
-    console.log("[4/4] Carregando lista de executores...");
+    console.log("[3/3] Carregando lista de executores...");
     try {
       const execData = await fetchSupabase(
         "funcionarios?or=(funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%)&order=nome.asc"
       );
 
       if (execData) {
-        console.log(`[4/4] ✓ ${execData.length} executores carregados`);
+        console.log(`[3/3] ✓ ${execData.length} executores carregados`);
         executores.value = execData;
       }
     } catch (execErr) {
-      console.warn("[4/4] ⚠ Erro ao carregar executores:", execErr);
+      console.warn("[3/3] ⚠ Erro ao carregar executores:", execErr);
       // Continuar mesmo sem executores
     }
 
