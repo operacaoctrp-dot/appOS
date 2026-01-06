@@ -538,13 +538,13 @@ const carregar = async (tentativa = 1) => {
     // TESTE DIRETO - Query simples no Supabase
     console.log("=== TESTE QUERY DIRETA ===");
     console.time("Query direta Supabase");
-    
+
     const { data: testDirect, error: testError } = await supabase
       .from("ordens_servico")
       .select("id, numero")
       .eq("id", Number(id))
       .limit(1);
-    
+
     console.timeEnd("Query direta Supabase");
     console.log("Resultado query direta:", testDirect);
     console.log("Erro query direta:", testError);

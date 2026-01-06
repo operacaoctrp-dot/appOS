@@ -128,6 +128,8 @@ export const useAuth = () => {
           }
         });
 
+        // TEMPORARIAMENTE DESABILITADO - refresh automático estava causando timeout
+        /*
         // Configurar refresh automático a cada 2 minutos
         if (process.client) {
           console.log(
@@ -172,6 +174,7 @@ export const useAuth = () => {
             });
           });
         }
+        */
       }
     } catch (error) {
       console.error("Erro ao inicializar autenticação:", error);
