@@ -490,186 +490,80 @@ const formData = reactive({
   tempo_fim: "",
 });
 
+// Função auxiliar para fazer queries diretas via REST API (bypass do SDK que está com problemas)
+const fetchSupabase = async (endpoint: string, options = {}) => {
+  const response = await fetch(`${supabase.supabaseUrl}/rest/v1/${endpoint}`, {
+    headers: {
+      apikey: supabase.supabaseKey || "",
+      Authorization: `Bearer ${supabase.supabaseKey || ""}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...((options as any).headers || {}),
+    },
+    ...(options as any),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 // Carregar dados
 const carregar = async (tentativa = 1) => {
   try {
     carregando.value = true;
     erro.value = "";
 
-    console.log(`=== Tentativa ${tentativa} de carregar dados ===`);
+    console.log(`Carregando ordem de serviço #${id}...`);
 
-    // Garantir sessão válida antes de carregar dados
-    console.log("Passo 1: Verificando sessão...");
-    let sessionValid = false;
+    // Garantir sessão válida
     try {
-      // Criar promise que resolve com timeout
-      const sessionPromise = ensureValidSession();
-      const timeoutPromise = new Promise<boolean>((resolve) =>
-        setTimeout(() => {
-          console.warn(
-            "Timeout ao verificar sessão, continuando mesmo assim..."
-          );
-          resolve(true);
-        }, 5000)
-      );
-
-      sessionValid = await Promise.race([sessionPromise, timeoutPromise]);
+      await ensureValidSession();
     } catch (sessErr) {
-      console.error("Erro ao verificar sessão:", sessErr);
-      sessionValid = true; // Assumir que está válido e continuar
+      console.warn("Erro ao verificar sessão, continuando:", sessErr);
     }
 
-    console.log(`Sessão válida: ${sessionValid}`);
+    // SOLUÇÃO: Usar fetch direto para buscar a ordem (SDK está com problemas)
+    console.log("Buscando dados da ordem...");
+    
+    // Query complexa com todos os JOINs necessários
+    const select = `
+      *,
+      familia:familia_id(id,familia),
+      ativo:ativo_id(id,codigo,descricao),
+      solicitante:solicitante_id(id,nome),
+      recebido_por:recebido_por_id(id,nome),
+      executor:executor_id(id,nome),
+      executores_tabela:ordem_executores(funcionario:funcionario_id(id,nome))
+    `.replace(/\s+/g, "");
 
-    if (!sessionValid && tentativa === 1) {
-      console.warn("Sessão inválida, tentando novamente...");
-      return carregar(2);
-    }
-
-    if (!sessionValid && tentativa >= 2) {
-      erro.value = "Sessão expirada. Por favor, recarregue a página.";
-      carregando.value = false;
-      return;
-    }
-
-    console.log("Passo 2: Buscando ordem...");
-    console.log("ID da rota:", id);
-
-    // TESTE ULTRA SIMPLES - Testar se Supabase está respondendo
-    console.log("=== TESTE CONEXÃO SUPABASE ===");
-    console.log("Supabase URL:", supabase.supabaseUrl);
-    console.log(
-      "Supabase Key (primeiros 20 chars):",
-      supabase.supabaseKey?.substring(0, 20) + "..."
+    const ordemArray = await fetchSupabase(
+      `ordens_servico?id=eq.${id}&select=${select}&limit=1`
     );
 
-    try {
-      console.time("Teste ping Supabase");
-      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/`, {
-        headers: {
-          apikey: supabase.supabaseKey || "",
-          Authorization: `Bearer ${supabase.supabaseKey || ""}`,
-        },
-      });
-      console.timeEnd("Teste ping Supabase");
-      console.log("Status da resposta:", response.status);
-      console.log("Supabase está respondendo!");
-    } catch (pingError) {
-      console.error("Erro ao pingar Supabase:", pingError);
-    }
-
-    // TESTE QUERY DIRETA
-    console.log("=== TESTE QUERY DIRETA ===");
-
-    // SOLUÇÃO: Usar FETCH direto em vez do SDK do Supabase
-    console.log("Teste: Usando fetch direto (bypass SDK)...");
-    console.time("Fetch direto");
-    try {
-      const fetchResponse = await fetch(
-        `${supabase.supabaseUrl}/rest/v1/ordens_servico?id=eq.${id}&select=id,numero&limit=1`,
-        {
-          headers: {
-            apikey: supabase.supabaseKey || "",
-            Authorization: `Bearer ${supabase.supabaseKey || ""}`,
-            "Content-Type": "application/json",
-            Prefer: "return=representation",
-          },
-        }
-      );
-      const fetchData = await fetchResponse.json();
-      console.timeEnd("Fetch direto");
-      console.log("Resultado fetch direto:", fetchData);
-      console.log("Status fetch:", fetchResponse.status);
-
-      if (fetchData && fetchData.length > 0) {
-        console.log("✅ FETCH DIRETO FUNCIONOU!");
-        // Aqui podemos usar os dados
-      }
-    } catch (fetchErr) {
-      console.error("Erro no fetch direto:", fetchErr);
-    }
-
-    // Teste 1: COUNT simples (via SDK - para comparação)
-    console.log("Teste 1 (SDK): Contando registros na tabela...");
-    console.time("Count query");
-    try {
-      const { count, error: countError } = await supabase
-        .from("ordens_servico")
-        .select("*", { count: "exact", head: true });
-      console.timeEnd("Count query");
-      console.log("Total de registros:", count);
-      console.log("Erro no count:", countError);
-    } catch (countErr) {
-      console.error("Exceção no count:", countErr);
-    }
-
-    // Teste 2: SELECT simples sem WHERE
-    console.log("Teste 2: SELECT sem filtro (limit 1)...");
-    console.time("Select sem filtro");
-    try {
-      const { data: dataNoFilter, error: errorNoFilter } = await supabase
-        .from("ordens_servico")
-        .select("id")
-        .limit(1);
-      console.timeEnd("Select sem filtro");
-      console.log("Resultado sem filtro:", dataNoFilter);
-      console.log("Erro sem filtro:", errorNoFilter);
-    } catch (noFilterErr) {
-      console.error("Exceção sem filtro:", noFilterErr);
-    }
-
-    // Teste 3: SELECT com WHERE
-    console.log("Teste 3: SELECT com WHERE id =", id);
-    console.time("Query direta Supabase");
-
-    const { data: testDirect, error: testError } = await supabase
-      .from("ordens_servico")
-      .select("id, numero")
-      .eq("id", Number(id))
-      .limit(1);
-
-    console.timeEnd("Query direta Supabase");
-    console.log("Resultado query direta:", testDirect);
-    console.log("Erro query direta:", testError);
-
-    if (testError || !testDirect || testDirect.length === 0) {
-      erro.value = testError?.message || "Ordem não encontrada";
-      carregando.value = false;
-      return;
-    }
-
-    console.log("=== Query direta OK! Continuando... ===");
-
-    // Buscar ordem com timeout
-    let ordemData: OrdemServicoComRelacoes | null = null;
-    try {
-      const ordemPromise = buscarOrdem(Number(id));
-      const ordemTimeoutPromise = new Promise<OrdemServicoComRelacoes | null>(
-        (resolve) =>
-          setTimeout(() => {
-            console.warn(
-              "Timeout ao buscar ordem (20s), continuando com erro..."
-            );
-            resolve(null);
-          }, 20000)
-      );
-
-      ordemData = await Promise.race([ordemPromise, ordemTimeoutPromise]);
-    } catch (ordemErr) {
-      console.error("Erro ao buscar ordem:", ordemErr);
-    }
-
-    console.log("Ordem carregada:", ordemData);
-    if (!ordemData) {
+    if (!ordemArray || ordemArray.length === 0) {
       erro.value = "Ordem de serviço não encontrada";
       carregando.value = false;
       return;
     }
 
-    console.log("Passo 3: Preenchendo formulário...");
-    ordem.value = ordemData;
+    const ordemData = ordemArray[0];
+    console.log("Ordem carregada com sucesso");
 
-    // Preencher formulário se já tiver dados
+    // Processar dados
+    ordem.value = {
+      ...ordemData,
+      familia: ordemData.familia || null,
+      ativo: ordemData.ativo || null,
+      solicitante: ordemData.solicitante || null,
+      recebido_por: ordemData.recebido_por || null,
+      executor: ordemData.executor || null,
+      executores_lista: ordemData.executores_tabela?.map((e: any) => e.funcionario) || [],
+    };
+
+    // Preencher formulário
     if (ordemData.descricao_servico) {
       formData.descricao_servico = ordemData.descricao_servico;
       formData.executores = ordemData.executor_id
@@ -690,41 +584,33 @@ const carregar = async (tentativa = 1) => {
       adicionarInsumo();
     }
 
-    // Buscar executores (apenas funcionários da manutenção)
-    console.log("Passo 4: Carregando executores...");
+    // Buscar executores usando fetch direto também
+    console.log("Carregando lista de executores...");
     try {
-      const { data: execData, error: execError } = await supabase
-        .from("funcionarios")
-        .select("*")
-        .or(
-          "funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%"
-        )
-        .order("nome");
-
-      if (execError) {
-        console.warn("Erro ao carregar executores:", execError);
-      }
-
+      const execData = await fetchSupabase(
+        'funcionarios?or=(funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%)&order=nome.asc'
+      );
+      
       if (execData) {
-        console.log("Executores carregados:", execData.length);
+        console.log(`${execData.length} executores carregados`);
         executores.value = execData;
       }
     } catch (execErr) {
-      console.error("Exceção ao carregar executores:", execErr);
+      console.warn("Erro ao carregar executores:", execErr);
       // Continuar mesmo sem executores
     }
 
-    console.log("=== Carregamento completado com sucesso ===");
+    console.log("Carregamento concluído!");
   } catch (error) {
     console.error("Erro ao carregar:", error);
 
     // Se é a primeira tentativa, tentar novamente
     if (tentativa === 1) {
-      console.log("Erro ao carregar, tentando novamente...");
+      console.log("Tentando novamente...");
       return carregar(2);
     }
 
-    erro.value = "Erro ao carregar dados";
+    erro.value = error instanceof Error ? error.message : "Erro ao carregar dados";
   } finally {
     carregando.value = false;
   }
