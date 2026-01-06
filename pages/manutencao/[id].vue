@@ -542,9 +542,9 @@ const carregar = async (tentativa = 1) => {
       const ordemTimeoutPromise = new Promise<OrdemServicoComRelacoes | null>(
         (resolve) =>
           setTimeout(() => {
-            console.warn("Timeout ao buscar ordem, continuando com erro...");
+            console.warn("Timeout ao buscar ordem (20s), continuando com erro...");
             resolve(null);
-          }, 10000)
+          }, 20000)
       );
 
       ordemData = await Promise.race([ordemPromise, ordemTimeoutPromise]);

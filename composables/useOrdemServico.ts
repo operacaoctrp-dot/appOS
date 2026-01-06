@@ -155,16 +155,22 @@ export const useOrdemServico = () => {
     try {
       console.log(`[buscarOrdem] Iniciando busca da ordem com ID: ${id}`);
 
-      // Primeira query: dados principais sem relacionamentos complexos
+      // Primeira query: dados principais - query simples
       console.log("[buscarOrdem] Query 1: Buscando dados principais...");
-      const { data: mainData, error: mainError } = await supabase
+      console.time("[buscarOrdem] Query 1 tempo");
+      
+      const { data: mainData, error: mainError, status } = await supabase
         .from("ordens_servico")
-        .select("*")
+        .select("id,numero,sintoma_defeito,familia_id,ativo_id,solicitante_id,recebido_por_id,executor_id,descricao_servico,insumos,observacoes,data_inicio,tempo_inicio,data_fim,tempo_fim,dados_manutencao_preenchidos")
         .eq("id", id)
         .maybeSingle();
 
+      console.timeEnd("[buscarOrdem] Query 1 tempo");
+      console.log("[buscarOrdem] Query 1 status:", status);
+
       if (mainError) {
         console.error("[buscarOrdem] Erro na query principal:", mainError);
+        console.error("[buscarOrdem] Erro detalhado:", JSON.stringify(mainError));
         return null;
       }
 
@@ -176,7 +182,7 @@ export const useOrdemServico = () => {
         return null;
       }
 
-      console.log("[buscarOrdem] Dados principais encontrados");
+      console.log("[buscarOrdem] Dados principais encontrados:", mainData);
       let resultado: any = mainData;
 
       // Segunda query: familia
