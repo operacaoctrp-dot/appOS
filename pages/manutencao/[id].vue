@@ -510,14 +510,18 @@ const carregar = async (tentativa = 1) => {
 
     if (!sessionValid && tentativa >= 2) {
       erro.value = "Sessão expirada. Por favor, recarregue a página.";
+      carregando.value = false;
       return;
     }
 
     console.log("Passo 2: Buscando ordem...");
+    console.log("ID da rota:", id);
     // Buscar ordem
     const ordemData = await buscarOrdem(Number(id));
+    console.log("Ordem carregada:", ordemData);
     if (!ordemData) {
       erro.value = "Ordem de serviço não encontrada";
+      carregando.value = false;
       return;
     }
 
@@ -546,17 +550,30 @@ const carregar = async (tentativa = 1) => {
     }
 
     // Buscar executores (apenas funcionários da manutenção)
-    const { data: execData } = await supabase
-      .from("funcionarios")
-      .select("*")
-      .or(
-        "funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%"
-      )
-      .order("nome");
+    console.log("Passo 4: Carregando executores...");
+    try {
+      const { data: execData, error: execError } = await supabase
+        .from("funcionarios")
+        .select("*")
+        .or(
+          "funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%"
+        )
+        .order("nome");
 
-    if (execData) {
-      executores.value = execData;
+      if (execError) {
+        console.warn("Erro ao carregar executores:", execError);
+      }
+
+      if (execData) {
+        console.log("Executores carregados:", execData.length);
+        executores.value = execData;
+      }
+    } catch (execErr) {
+      console.error("Exceção ao carregar executores:", execErr);
+      // Continuar mesmo sem executores
     }
+
+    console.log("=== Carregamento completado com sucesso ===");
   } catch (error) {
     console.error("Erro ao carregar:", error);
 
