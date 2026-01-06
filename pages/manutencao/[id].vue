@@ -535,6 +535,28 @@ const carregar = async (tentativa = 1) => {
     console.log("Passo 2: Buscando ordem...");
     console.log("ID da rota:", id);
 
+    // TESTE DIRETO - Query simples no Supabase
+    console.log("=== TESTE QUERY DIRETA ===");
+    console.time("Query direta Supabase");
+    
+    const { data: testDirect, error: testError } = await supabase
+      .from("ordens_servico")
+      .select("id, numero")
+      .eq("id", Number(id))
+      .limit(1);
+    
+    console.timeEnd("Query direta Supabase");
+    console.log("Resultado query direta:", testDirect);
+    console.log("Erro query direta:", testError);
+
+    if (testError || !testDirect || testDirect.length === 0) {
+      erro.value = testError?.message || "Ordem não encontrada";
+      carregando.value = false;
+      return;
+    }
+
+    console.log("=== Query direta OK! Continuando... ===");
+
     // Buscar ordem com timeout
     let ordemData: OrdemServicoComRelacoes | null = null;
     try {
