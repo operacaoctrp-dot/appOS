@@ -535,7 +535,27 @@ const carregar = async (tentativa = 1) => {
     console.log("Passo 2: Buscando ordem...");
     console.log("ID da rota:", id);
 
-    // TESTE DIRETO - Query simples no Supabase
+    // TESTE ULTRA SIMPLES - Testar se Supabase está respondendo
+    console.log("=== TESTE CONEXÃO SUPABASE ===");
+    console.log("Supabase URL:", supabase.supabaseUrl);
+    console.log("Supabase Key (primeiros 20 chars):", supabase.supabaseKey?.substring(0, 20) + "...");
+    
+    try {
+      console.time("Teste ping Supabase");
+      const response = await fetch(`${supabase.supabaseUrl}/rest/v1/`, {
+        headers: {
+          'apikey': supabase.supabaseKey || '',
+          'Authorization': `Bearer ${supabase.supabaseKey || ''}`
+        }
+      });
+      console.timeEnd("Teste ping Supabase");
+      console.log("Status da resposta:", response.status);
+      console.log("Supabase está respondendo!");
+    } catch (pingError) {
+      console.error("Erro ao pingar Supabase:", pingError);
+    }
+
+    // TESTE QUERY DIRETA
     console.log("=== TESTE QUERY DIRETA ===");
     console.time("Query direta Supabase");
 
