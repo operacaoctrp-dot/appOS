@@ -154,7 +154,7 @@ export const useOrdemServico = () => {
   ): Promise<OrdemServicoComRelacoes | null> => {
     try {
       console.log(`[buscarOrdem] Iniciando busca da ordem com ID: ${id}`);
-      
+
       // Primeira query: dados principais sem relacionamentos complexos
       console.log("[buscarOrdem] Query 1: Buscando dados principais...");
       const { data: mainData, error: mainError } = await supabase
@@ -169,7 +169,10 @@ export const useOrdemServico = () => {
       }
 
       if (!mainData) {
-        console.error("[buscarOrdem] Ordem de serviço não encontrada para ID:", id);
+        console.error(
+          "[buscarOrdem] Ordem de serviço não encontrada para ID:",
+          id
+        );
         return null;
       }
 
@@ -263,10 +266,11 @@ export const useOrdemServico = () => {
       if (execError) {
         console.warn("[buscarOrdem] Erro ao carregar executores:", execError);
       } else if (executoresData && executoresData.length > 0) {
-        console.log("[buscarOrdem] Executores carregados:", executoresData.length);
-        resultado.executores = executoresData.map(
-          (e: any) => e.funcionario
+        console.log(
+          "[buscarOrdem] Executores carregados:",
+          executoresData.length
         );
+        resultado.executores = executoresData.map((e: any) => e.funcionario);
       } else {
         console.log("[buscarOrdem] Nenhum executor encontrado");
       }
@@ -277,9 +281,6 @@ export const useOrdemServico = () => {
       console.error("[buscarOrdem] Exceção:", err);
       return null;
     }
-  };
-
-    return data;
   };
 
   // Criar nova ordem de serviço
