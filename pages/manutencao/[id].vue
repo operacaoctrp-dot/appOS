@@ -534,23 +534,24 @@ const carregar = async (tentativa = 1) => {
 
     console.log("Passo 2: Buscando ordem...");
     console.log("ID da rota:", id);
-    
+
     // Buscar ordem com timeout
     let ordemData: OrdemServicoComRelacoes | null = null;
     try {
       const ordemPromise = buscarOrdem(Number(id));
-      const ordemTimeoutPromise = new Promise<OrdemServicoComRelacoes | null>((resolve) =>
-        setTimeout(() => {
-          console.warn("Timeout ao buscar ordem, continuando com erro...");
-          resolve(null);
-        }, 10000)
+      const ordemTimeoutPromise = new Promise<OrdemServicoComRelacoes | null>(
+        (resolve) =>
+          setTimeout(() => {
+            console.warn("Timeout ao buscar ordem, continuando com erro...");
+            resolve(null);
+          }, 10000)
       );
-      
+
       ordemData = await Promise.race([ordemPromise, ordemTimeoutPromise]);
     } catch (ordemErr) {
       console.error("Erro ao buscar ordem:", ordemErr);
     }
-    
+
     console.log("Ordem carregada:", ordemData);
     if (!ordemData) {
       erro.value = "Ordem de serviço não encontrada";
