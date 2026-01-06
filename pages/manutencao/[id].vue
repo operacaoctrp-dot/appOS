@@ -560,12 +560,37 @@ const carregar = async (tentativa = 1) => {
 
     // TESTE QUERY DIRETA
     console.log("=== TESTE QUERY DIRETA ===");
-    
-    // Teste 1: COUNT simples
-    console.log("Teste 1: Contando registros na tabela...");
-    console.time("Count query");
+
+    // SOLUÇÃO: Usar FETCH direto em vez do SDK do Supabase
+    console.log("Teste: Usando fetch direto (bypass SDK)...");
+    console.time("Fetch direto");
     try {
-      const { count, error: countError } = await supabase
+      const fetchResponse = await fetch(
+        `${supabase.supabaseUrl}/rest/v1/ordens_servico?id=eq.${id}&select=id,numero&limit=1`,
+        {
+          headers: {
+            'apikey': supabase.supabaseKey || '',
+            'Authorization': `Bearer ${supabase.supabaseKey || ''}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          }
+        }
+      );
+      const fetchData = await fetchResponse.json();
+      console.timeEnd("Fetch direto");
+      console.log("Resultado fetch direto:", fetchData);
+      console.log("Status fetch:", fetchResponse.status);
+      
+      if (fetchData && fetchData.length > 0) {
+        console.log("✅ FETCH DIRETO FUNCIONOU!");
+        // Aqui podemos usar os dados
+      }
+    } catch (fetchErr) {
+      console.error("Erro no fetch direto:", fetchErr);
+    }
+    
+    // Teste 1: COUNT simples (via SDK - para comparação)
+    console.log("Teste 1 (SDK): Contando registros na tabela...");
         .from("ordens_servico")
         .select("*", { count: "exact", head: true });
       console.timeEnd("Count query");
@@ -574,7 +599,7 @@ const carregar = async (tentativa = 1) => {
     } catch (countErr) {
       console.error("Exceção no count:", countErr);
     }
-    
+
     // Teste 2: SELECT simples sem WHERE
     console.log("Teste 2: SELECT sem filtro (limit 1)...");
     console.time("Select sem filtro");
