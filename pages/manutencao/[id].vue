@@ -611,7 +611,7 @@ const carregar = async (tentativa = 1) => {
     console.log("[3/3] Carregando lista de executores...");
     try {
       const execData = await fetchSupabase(
-        "funcionarios?or=(funcao.ilike.%manutenção%,funcao.ilike.%manutencao%,funcao.ilike.%auxiliar%,funcao.ilike.%mecânico%,funcao.ilike.%mecanico%,funcao.ilike.%eletricista%)&order=nome.asc"
+        "funcionarios?or=(funcao.ilike.*manutenção*,funcao.ilike.*manutencao*,funcao.ilike.*auxiliar*,funcao.ilike.*mecânico*,funcao.ilike.*mecanico*,funcao.ilike.*eletricista*)&order=nome.asc"
       );
 
       if (execData) {
