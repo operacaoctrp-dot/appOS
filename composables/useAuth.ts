@@ -42,45 +42,42 @@ export const useAuth = () => {
   // Garantir que a sessão está válida antes de fazer operações
   const ensureValidSession = async (): Promise<boolean> => {
     try {
-      console.log("🔴 Verificando sessão...");
-      
       // Verificar apenas se temos uma sessão válida (rápido)
       // Não fazer refresh - evita travamentos
       const {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
-      
+
       if (currentSession) {
         session.value = currentSession;
         user.value = currentSession.user;
-        console.log("🔴 Sessão ainda válida, não precisa renovar");
         return true;
       }
 
-      console.warn("🔴 Nenhuma sessão válida, tentando refresh...");
-      
       // Tentar refresh APENAS se não temos sessão
       try {
         const refreshPromise = supabase.auth.refreshSession();
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Timeout no refresh")), 5000)
         );
-        
-        const { data, error } = await Promise.race([refreshPromise, timeoutPromise]) as any;
+
+        const { data, error } = (await Promise.race([
+          refreshPromise,
+          timeoutPromise,
+        ])) as any;
 
         if (!error && data?.session) {
           session.value = data.session;
           user.value = data.session.user;
-          console.log("🔴 Sessão renovada com sucesso");
           return true;
         }
       } catch (refreshError) {
-        console.warn("🔴 Refresh falhou ou timeout:", refreshError);
+        console.warn("Erro ao renovar sessão:", refreshError);
       }
 
       return false;
     } catch (error) {
-      console.error("🔴 Erro ao garantir sessão:", error);
+      console.error("Erro ao garantir sessão:", error);
       return false;
     }
   };

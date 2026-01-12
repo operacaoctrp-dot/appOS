@@ -552,7 +552,6 @@ const carregarDados = async () => {
 };
 
 const onFamiliaChange = async () => {
-  console.error("🔴 FUNCTION CALLED: onFamiliaChange - DEBUG TEST");
   ativosErro.value = "";
   ativosLoading.value = true;
   clearTimeout(timeoutAtivos);
@@ -568,13 +567,7 @@ const onFamiliaChange = async () => {
 
   try {
     if (form.value.familia_id) {
-      console.error(
-        "🔴 INSIDE IF BLOCK: familia_id = " + form.value.familia_id
-      );
-
-      console.error("🔴 CHAMANDO listarAtivosPorFamilia DIRETO (sem verificação de sessão)");
       let ativos = await listarAtivosPorFamilia(form.value.familia_id);
-      console.error("🔴 RETORNOU: " + ativos.length + " ativos");
 
       // Se não retornou ativos e está online, tentar renovar sessão e buscar novamente
       if (!ativos.length && isOnline.value) {
@@ -662,11 +655,7 @@ watch(
 watch(
   () => form.value.familia_id,
   (novaFamilia, familiaAnterior) => {
-    console.log(
-      `[Watch familia_id] Mudança detectada! De: ${familiaAnterior} Para: ${novaFamilia}`
-    );
     if (novaFamilia && novaFamilia !== familiaAnterior) {
-      console.log("[Watch familia_id] Chamando onFamiliaChange...");
       onFamiliaChange();
     }
   }

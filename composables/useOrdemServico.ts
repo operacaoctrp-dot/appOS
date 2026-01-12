@@ -437,32 +437,17 @@ export const useOrdemServico = () => {
   const listarAtivosPorFamilia = async (
     familiaId: number
   ): Promise<Ativo[]> => {
-    console.log(
-      `🔴🔴🔴 [listarAtivosPorFamilia] INICIANDO BUSCA PARA familia_id: ${familiaId}`
-    );
-
     const { data, error } = await supabase
       .from("ativos")
       .select("*")
       .eq("familia_id", familiaId)
       .order("codigo");
 
-    console.log(
-      `🔴🔴🔴 [listarAtivosPorFamilia] QUERY COMPLETA - data: ${
-        data?.length || 0
-      }, error: ${error?.message || "none"}`
-    );
-
     if (error) {
-      console.error(`🔴🔴🔴 [listarAtivosPorFamilia] ERRO:`, error);
+      console.error("Erro ao listar ativos por família:", error);
       throw error;
     }
 
-    console.log(
-      `🔴🔴🔴 [listarAtivosPorFamilia] SUCESSO! Retornando ${
-        data?.length || 0
-      } ativos`
-    );
     return data || [];
   };
 
