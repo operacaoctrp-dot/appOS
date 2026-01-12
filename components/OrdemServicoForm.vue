@@ -558,7 +558,6 @@ const carregarDados = async () => {
           form.value.categoria_servico =
             osParaDuplicar.categoria_servico || "MECÂNICO";
           form.value.familia_id = osParaDuplicar.familia_id;
-          form.value.ativo_id = osParaDuplicar.ativo_id;
           form.value.solicitante_id = osParaDuplicar.solicitante_id;
           form.value.recebido_por_id = osParaDuplicar.recebido_por_id;
           form.value.descricao_servico = osParaDuplicar.descricao_servico || "";
@@ -568,7 +567,7 @@ const carregarDados = async () => {
           form.value.data_recebimento = dataAtual;
           form.value.hora_recebimento = horaAtual;
 
-          // Carregar ativos da família se houver
+          // Carregar ativos da família se houver - ANTES de setar ativo_id
           if (osParaDuplicar.familia_id) {
             try {
               console.log(
@@ -580,11 +579,14 @@ const carregarDados = async () => {
               console.log(
                 `[Duplicação] Ativos carregados com sucesso: ${ativosFiltrados.value.length}`
               );
-              // Se tinha um ativo_id, ele já foi preenchido acima
-              // e agora está na lista de ativos filtrados
+              // Agora setar o ativo_id APÓS carregar a lista
+              form.value.ativo_id = osParaDuplicar.ativo_id;
             } catch (error) {
               console.error(`[Duplicação] Erro ao carregar ativos:`, error);
             }
+          } else {
+            // Se não há família, setar ativo direto
+            form.value.ativo_id = osParaDuplicar.ativo_id;
           }
 
           // Limpar sessionStorage após carregar
