@@ -572,13 +572,7 @@ const onFamiliaChange = async () => {
         "🔴 INSIDE IF BLOCK: familia_id = " + form.value.familia_id
       );
 
-      // Garantir sessão válida ANTES de fazer a requisição
-      if (isOnline.value) {
-        console.error("🔴 VERIFICANDO SESSÃO");
-        await ensureValidSession();
-      }
-
-      console.error("🔴 CHAMANDO listarAtivosPorFamilia");
+      console.error("🔴 CHAMANDO listarAtivosPorFamilia DIRETO (sem verificação de sessão)");
       let ativos = await listarAtivosPorFamilia(form.value.familia_id);
       console.error("🔴 RETORNOU: " + ativos.length + " ativos");
 
