@@ -563,11 +563,10 @@ const carregarDados = async () => {
           form.value.recebido_por_id = osParaDuplicar.recebido_por_id;
           form.value.descricao_servico = osParaDuplicar.descricao_servico || "";
           form.value.observacoes = osParaDuplicar.observacoes || "";
-          // Manter a data da solicitação original se fornecida, caso contrário usa data atual
-          if (osParaDuplicar.data_solicitacao) {
-            form.value.data_solicitacao = osParaDuplicar.data_solicitacao;
-          }
-
+          // Data e hora do sistema na duplicação
+          form.value.data_solicitacao = dataAtual;
+          form.value.data_recebimento = dataAtual;
+          form.value.hora_recebimento = horaAtual;
 
           // Carregar ativos da família se houver
           if (osParaDuplicar.familia_id) {
@@ -581,6 +580,8 @@ const carregarDados = async () => {
               console.log(
                 `[Duplicação] Ativos carregados com sucesso: ${ativosFiltrados.value.length}`
               );
+              // Se tinha um ativo_id, ele já foi preenchido acima
+              // e agora está na lista de ativos filtrados
             } catch (error) {
               console.error(`[Duplicação] Erro ao carregar ativos:`, error);
             }
