@@ -372,6 +372,7 @@ const { isOnline } = useOffline();
 let timeoutAtivos: any = null;
 const solicitantes = ref<Solicitante[]>([]);
 const funcionarios = ref<Funcionario[]>([]);
+const estaduplicando = ref(false);
 
 // Data atual formatada
 const dataAtual = new Date().toISOString().split("T")[0];
@@ -546,6 +547,7 @@ const carregarDados = async () => {
       const osParaDuplicarStr = sessionStorage.getItem("osParaDuplicar");
       if (osParaDuplicarStr) {
         try {
+          estaduplicando.value = true;
           const osParaDuplicar = JSON.parse(osParaDuplicarStr);
           console.log(
             "Carregando dados duplicados de OS anterior:",
@@ -581,6 +583,9 @@ const carregarDados = async () => {
               );
               // Agora setar o ativo_id APÓS carregar a lista
               form.value.ativo_id = osParaDuplicar.ativo_id;
+              console.log(
+                `[Duplicação] Ativo selecionado: ${osParaDuplicar.ativo_id}`
+              );
             } catch (error) {
               console.error(`[Duplicação] Erro ao carregar ativos:`, error);
             }
@@ -594,6 +599,8 @@ const carregarDados = async () => {
           console.log("✓ OS duplicada com sucesso!");
         } catch (error) {
           console.error("Erro ao processar dados duplicados:", error);
+        } finally {
+          estaduplicando.value = false;
         }
       }
     }
@@ -649,7 +656,10 @@ const onFamiliaChange = async () => {
           `Sucesso! ${ativos.length} ativos carregados para a família.`
         );
       }
-      form.value.ativo_id = undefined;
+      // Não limpar ativo_id se estamos duplicando
+      if (!estaduplicando.value) {
+        form.value.ativo_id = undefined;
+      }
     } else {
       console.log("Nenhuma família selecionada");
       ativosFiltrados.value = [];
@@ -675,7 +685,10 @@ const onFamiliaChange = async () => {
           if (!ativos.length) {
             ativosErro.value = "Nenhum ativo encontrado para esta família.";
           }
-          form.value.ativo_id = undefined;
+          // Não limpar ativo_id se estamos duplicando
+          if (!estaduplicando.value) {
+            form.value.ativo_id = undefined;
+          }
           console.log("Sucesso na segunda tentativa!");
           return; // Sucesso na segunda tentativa
         } catch (retryError) {
