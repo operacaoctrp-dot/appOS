@@ -197,8 +197,19 @@
                   </svg>
                   Carregando...
                 </div>
-                <div v-if="ativosErro" class="text-xs text-red-600 mt-1">
-                  {{ ativosErro }}
+                <div
+                  v-if="ativosErro"
+                  class="text-xs text-red-600 mt-2 flex items-center justify-between"
+                >
+                  <span>{{ ativosErro }}</span>
+                  <button
+                    type="button"
+                    @click="onFamiliaChange"
+                    :disabled="ativosLoading"
+                    class="ml-2 px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 whitespace-nowrap text-xs"
+                  >
+                    Tentar Novamente
+                  </button>
                 </div>
               </div>
               <div style="min-width: 300px">
@@ -463,9 +474,24 @@ const carregarDados = async () => {
 
         // Carregar ativos da família
         if (ordem.familia_id) {
-          ativosFiltrados.value = await listarAtivosPorFamilia(
-            ordem.familia_id
-          );
+          try {
+            console.log(
+              `[Init] Carregando ativos para família_id: ${ordem.familia_id} no modo edição`
+            );
+            ativosFiltrados.value = await listarAtivosPorFamilia(
+              ordem.familia_id
+            );
+            console.log(
+              `[Init] Ativos carregados com sucesso: ${ativosFiltrados.value.length}`
+            );
+          } catch (error) {
+            console.error(
+              `[Init] Erro ao carregar ativos na inicialização:`,
+              error
+            );
+            ativosErro.value =
+              "Erro ao carregar ativos. Tente selecionar a família novamente.";
+          }
         }
 
         // Preencher formulário com dados existentes
@@ -526,48 +552,74 @@ const carregarDados = async () => {
 };
 
 const onFamiliaChange = async () => {
+  console.error("🔴 FUNCTION CALLED: onFamiliaChange - DEBUG TEST");
   ativosErro.value = "";
   ativosLoading.value = true;
   clearTimeout(timeoutAtivos);
   timeoutAtivos = setTimeout(() => {
     if (ativosLoading.value) {
+      console.warn("Timeout ao buscar ativos");
       ativosErro.value = isOnline.value
-        ? "Erro: tempo excedido ao buscar ativos. Tente novamente."
+        ? "Erro: tempo excedido ao buscar ativos (20s). Tente selecionar novamente ou recarregue a página."
         : "Você está offline. Conecte-se à internet para buscar ativos.";
       ativosLoading.value = false;
     }
-  }, 15000); // Aumentado para 15 segundos para dar tempo ao refresh
+  }, 20000); // 20 segundos de timeout
 
   try {
     if (form.value.familia_id) {
+      console.error(
+        "🔴 INSIDE IF BLOCK: familia_id = " + form.value.familia_id
+      );
+
       // Garantir sessão válida ANTES de fazer a requisição
       if (isOnline.value) {
-        console.log("Verificando sessão antes de buscar ativos...");
+        console.error("🔴 VERIFICANDO SESSÃO");
         await ensureValidSession();
       }
 
+      console.error("🔴 CHAMANDO listarAtivosPorFamilia");
       let ativos = await listarAtivosPorFamilia(form.value.familia_id);
+      console.error("🔴 RETORNOU: " + ativos.length + " ativos");
 
       // Se não retornou ativos e está online, tentar renovar sessão e buscar novamente
       if (!ativos.length && isOnline.value) {
-        console.log("Nenhum ativo retornado, tentando renovar sessão...");
+        console.warn(
+          "Nenhum ativo retornado na primeira tentativa. Tentando renovar sessão..."
+        );
         const sessionRenewed = await refreshSession();
         if (sessionRenewed) {
           console.log("Sessão renovada, buscando ativos novamente...");
           ativos = await listarAtivosPorFamilia(form.value.familia_id);
+          console.log(`Segunda tentativa retornou ${ativos.length} ativos`);
         }
       }
 
       ativosFiltrados.value = ativos;
       if (!ativos.length) {
-        ativosErro.value = "Nenhum ativo encontrado para esta família.";
+        console.warn(
+          `Nenhum ativo encontrado para família_id: ${form.value.familia_id}`
+        );
+        ativosErro.value =
+          "Nenhum ativo encontrado para esta família. Verifique se existem ativos cadastrados no banco de dados.";
+      } else {
+        console.log(
+          `Sucesso! ${ativos.length} ativos carregados para a família.`
+        );
       }
       form.value.ativo_id = undefined;
     } else {
+      console.log("Nenhuma família selecionada");
       ativosFiltrados.value = [];
     }
   } catch (e: any) {
     console.error("Erro ao buscar ativos:", e);
+    console.error("Detalhes do erro:", {
+      message: e?.message,
+      code: e?.code,
+      hint: e?.hint,
+      details: e?.details,
+    });
 
     // Tentar renovar sessão em caso de erro
     if (isOnline.value) {
@@ -582,6 +634,7 @@ const onFamiliaChange = async () => {
             ativosErro.value = "Nenhum ativo encontrado para esta família.";
           }
           form.value.ativo_id = undefined;
+          console.log("Sucesso na segunda tentativa!");
           return; // Sucesso na segunda tentativa
         } catch (retryError) {
           console.error("Erro na segunda tentativa:", retryError);
@@ -590,7 +643,9 @@ const onFamiliaChange = async () => {
     }
 
     ativosErro.value = isOnline.value
-      ? "Erro ao buscar ativos. Tente recarregar a página."
+      ? `Erro ao buscar ativos: ${
+          e?.message || "Erro desconhecido"
+        }. Verifique o console para detalhes.`
       : "Você está offline. Conecte-se à internet para buscar ativos.";
     ativosFiltrados.value = [];
   } finally {
@@ -605,6 +660,20 @@ watch(
   (novaData) => {
     if (novaData) {
       form.value.data_recebimento = novaData;
+    }
+  }
+);
+
+// Watch para detectar mudanças na família
+watch(
+  () => form.value.familia_id,
+  (novaFamilia, familiaAnterior) => {
+    console.log(
+      `[Watch familia_id] Mudança detectada! De: ${familiaAnterior} Para: ${novaFamilia}`
+    );
+    if (novaFamilia && novaFamilia !== familiaAnterior) {
+      console.log("[Watch familia_id] Chamando onFamiliaChange...");
+      onFamiliaChange();
     }
   }
 );
