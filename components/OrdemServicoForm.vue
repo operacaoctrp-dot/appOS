@@ -555,11 +555,21 @@ const carregarDados = async () => {
           // Preencher formulário com dados duplicados
           form.value.tipo_os = osParaDuplicar.tipo_os || "CORRETIVA";
           form.value.sintoma_defeito = osParaDuplicar.sintoma_defeito || "";
+          form.value.categoria_servico =
+            osParaDuplicar.categoria_servico || "MECÂNICO";
           form.value.familia_id = osParaDuplicar.familia_id;
           form.value.ativo_id = osParaDuplicar.ativo_id;
           form.value.solicitante_id = osParaDuplicar.solicitante_id;
+          form.value.recebido_por_id = osParaDuplicar.recebido_por_id;
           form.value.descricao_servico = osParaDuplicar.descricao_servico || "";
           form.value.observacoes = osParaDuplicar.observacoes || "";
+          // Manter a data da solicitação original se fornecida, caso contrário usa data atual
+          if (osParaDuplicar.data_solicitacao) {
+            form.value.data_solicitacao = osParaDuplicar.data_solicitacao;
+          }
+          // Deixar data/hora de recebimento em branco para o usuário definir no novo formulário
+          form.value.data_recebimento = "";
+          form.value.hora_recebimento = "";
 
           // Carregar ativos da família se houver
           if (osParaDuplicar.familia_id) {
@@ -574,10 +584,7 @@ const carregarDados = async () => {
                 `[Duplicação] Ativos carregados com sucesso: ${ativosFiltrados.value.length}`
               );
             } catch (error) {
-              console.error(
-                `[Duplicação] Erro ao carregar ativos:`,
-                error
-              );
+              console.error(`[Duplicação] Erro ao carregar ativos:`, error);
             }
           }
 

@@ -885,17 +885,18 @@ const duplicarOrdem = (ordem: OrdemServicoComRelacoes) => {
     ativo_id: ordem.ativo_id,
     solicitante_id: ordem.solicitante_id,
     funcionario_id: ordem.funcionario_id,
+    recebido_por_id: ordem.recebido_por_id,
     tipo_os: ordem.tipo_os,
+    categoria_servico: ordem.categoria_servico,
     sintoma_defeito: ordem.sintoma_defeito,
     descricao_solucao: ordem.descricao_solucao,
+    descricao_servico: ordem.descricao_servico,
+    data_solicitacao: ordem.data_solicitacao,
     observacoes: ordem.observacoes,
   };
 
   // Armazenar no sessionStorage
-  sessionStorage.setItem(
-    "osParaDuplicar",
-    JSON.stringify(dadosDuplicacao)
-  );
+  sessionStorage.setItem("osParaDuplicar", JSON.stringify(dadosDuplicacao));
 
   // Redirecionar para página de nova OS
   navigateTo("/nova");
