@@ -398,6 +398,13 @@
                   🔧 Manutenção
                 </NuxtLink>
                 <button
+                  v-if="ordem.data_liberacao"
+                  @click="duplicarOrdem(ordem)"
+                  class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition whitespace-nowrap"
+                >
+                  📋 Duplicar
+                </button>
+                <button
                   v-if="!ordem.data_liberacao"
                   @click="abrirModalFechar(ordem)"
                   class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition whitespace-nowrap"
@@ -869,6 +876,29 @@ const excluirOrdem = async (ordem: OrdemServicoComRelacoes) => {
     showError("Erro ao excluir ordem de serviço");
     console.error(error);
   }
+};
+
+const duplicarOrdem = (ordem: OrdemServicoComRelacoes) => {
+  // Preparar os dados para duplicação
+  const dadosDuplicacao = {
+    familia_id: ordem.familia_id,
+    ativo_id: ordem.ativo_id,
+    solicitante_id: ordem.solicitante_id,
+    funcionario_id: ordem.funcionario_id,
+    tipo_os: ordem.tipo_os,
+    sintoma_defeito: ordem.sintoma_defeito,
+    descricao_solucao: ordem.descricao_solucao,
+    observacoes: ordem.observacoes,
+  };
+
+  // Armazenar no sessionStorage
+  sessionStorage.setItem(
+    "osParaDuplicar",
+    JSON.stringify(dadosDuplicacao)
+  );
+
+  // Redirecionar para página de nova OS
+  navigateTo("/nova");
 };
 
 const carregarOrdens = async (tentativa = 1) => {

@@ -541,6 +541,53 @@ const carregarDados = async () => {
       numeroOS.value = await getProximoNumero();
       form.value.numero = numeroOS.value;
       console.log("Número OS:", numeroOS.value);
+
+      // Verificar se há dados para duplicação no sessionStorage
+      const osParaDuplicarStr = sessionStorage.getItem("osParaDuplicar");
+      if (osParaDuplicarStr) {
+        try {
+          const osParaDuplicar = JSON.parse(osParaDuplicarStr);
+          console.log(
+            "Carregando dados duplicados de OS anterior:",
+            osParaDuplicar
+          );
+
+          // Preencher formulário com dados duplicados
+          form.value.tipo_os = osParaDuplicar.tipo_os || "CORRETIVA";
+          form.value.sintoma_defeito = osParaDuplicar.sintoma_defeito || "";
+          form.value.familia_id = osParaDuplicar.familia_id;
+          form.value.ativo_id = osParaDuplicar.ativo_id;
+          form.value.solicitante_id = osParaDuplicar.solicitante_id;
+          form.value.descricao_servico = osParaDuplicar.descricao_servico || "";
+          form.value.observacoes = osParaDuplicar.observacoes || "";
+
+          // Carregar ativos da família se houver
+          if (osParaDuplicar.familia_id) {
+            try {
+              console.log(
+                `[Duplicação] Carregando ativos para família_id: ${osParaDuplicar.familia_id}`
+              );
+              ativosFiltrados.value = await listarAtivosPorFamilia(
+                osParaDuplicar.familia_id
+              );
+              console.log(
+                `[Duplicação] Ativos carregados com sucesso: ${ativosFiltrados.value.length}`
+              );
+            } catch (error) {
+              console.error(
+                `[Duplicação] Erro ao carregar ativos:`,
+                error
+              );
+            }
+          }
+
+          // Limpar sessionStorage após carregar
+          sessionStorage.removeItem("osParaDuplicar");
+          console.log("✓ OS duplicada com sucesso!");
+        } catch (error) {
+          console.error("Erro ao processar dados duplicados:", error);
+        }
+      }
     }
   } catch (error) {
     console.error("Erro ao carregar dados:", error);
