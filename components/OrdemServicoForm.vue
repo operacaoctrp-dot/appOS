@@ -567,9 +567,7 @@ const carregarDados = async () => {
           if (osParaDuplicar.data_solicitacao) {
             form.value.data_solicitacao = osParaDuplicar.data_solicitacao;
           }
-          // Deixar data/hora de recebimento em branco para o usuário definir no novo formulário
-          form.value.data_recebimento = "";
-          form.value.hora_recebimento = "";
+
 
           // Carregar ativos da família se houver
           if (osParaDuplicar.familia_id) {
