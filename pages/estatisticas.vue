@@ -351,6 +351,77 @@
               </div>
             </div>
 
+            <!-- Indicadores de Confiabilidade -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <!-- MTTR -->
+              <div
+                class="bg-gradient-to-br from-sky-600 to-blue-700 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sky-100 text-sm font-medium uppercase">
+                      MTTR
+                    </p>
+                    <p class="text-3xl font-bold mt-2">{{ tempoStats.mttr }}</p>
+                    <p class="text-sm text-sky-100 mt-1">
+                      Tempo médio para reparo
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white bg-opacity-20 rounded-full p-4 backdrop-blur-sm"
+                  >
+                    <svg
+                      class="w-8 h-8"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MTBF -->
+              <div
+                class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-emerald-100 text-sm font-medium uppercase">
+                      MTBF
+                    </p>
+                    <p class="text-3xl font-bold mt-2">{{ tempoStats.mtbf }}</p>
+                    <p class="text-sm text-emerald-100 mt-1">
+                      Tempo médio entre falhas
+                    </p>
+                  </div>
+                  <div
+                    class="bg-white bg-opacity-20 rounded-full p-4 backdrop-blur-sm"
+                  >
+                    <svg
+                      class="w-8 h-8"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Gráficos de Tempo -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <!-- Distribuição por Faixa de Tempo -->
@@ -918,7 +989,7 @@ const stats = computed(() => {
   ordens.value.forEach((o) => {
     categorias.set(
       o.categoria_servico,
-      (categorias.get(o.categoria_servico) || 0) + 1
+      (categorias.get(o.categoria_servico) || 0) + 1,
     );
   });
   const porCategoria = Array.from(categorias.entries())
@@ -931,7 +1002,7 @@ const stats = computed(() => {
     if (o.solicitante?.nome) {
       solicitantes.set(
         o.solicitante.nome,
-        (solicitantes.get(o.solicitante.nome) || 0) + 1
+        (solicitantes.get(o.solicitante.nome) || 0) + 1,
       );
     }
   });
@@ -946,7 +1017,7 @@ const stats = computed(() => {
     if (o.executor?.nome) {
       executores.set(
         o.executor.nome,
-        (executores.get(o.executor.nome) || 0) + 1
+        (executores.get(o.executor.nome) || 0) + 1,
       );
     }
   });
@@ -961,7 +1032,7 @@ const stats = computed(() => {
     if (o.recebido_por?.nome) {
       recebedores.set(
         o.recebido_por.nome,
-        (recebedores.get(o.recebido_por.nome) || 0) + 1
+        (recebedores.get(o.recebido_por.nome) || 0) + 1,
       );
     }
   });
@@ -1016,7 +1087,7 @@ const calcularTempoMinutos = (
   dataInicio: string | undefined,
   tempoInicio: string | undefined,
   dataFim: string | undefined,
-  tempoFim: string | undefined
+  tempoFim: string | undefined,
 ): number | null => {
   if (!dataInicio || !tempoInicio || !dataFim || !tempoFim) return null;
 
@@ -1067,11 +1138,27 @@ const formatarTempo = (minutos: number): string => {
   }
 };
 
+const converterDataHoraParaDate = (
+  data: string | undefined,
+  hora?: string | undefined,
+): Date | null => {
+  if (!data) return null;
+
+  const horaNormalizada = hora
+    ? hora.split(":").length === 2
+      ? `${hora}:00`
+      : hora
+    : "00:00:00";
+
+  const valor = new Date(`${data}T${horaNormalizada}`);
+  return isNaN(valor.getTime()) ? null : valor;
+};
+
 // Estatísticas de Tempo
 const tempoStats = computed(() => {
   // Debug: log das OS com campos de tempo
   const osComCamposTempo = ordens.value.filter(
-    (o) => o.data_inicio || o.tempo_inicio || o.data_fim || o.tempo_fim
+    (o) => o.data_inicio || o.tempo_inicio || o.data_fim || o.tempo_fim,
   );
   if (osComCamposTempo.length > 0) {
     console.log(
@@ -1082,7 +1169,7 @@ const tempoStats = computed(() => {
         tempo_inicio: o.tempo_inicio,
         data_fim: o.data_fim,
         tempo_fim: o.tempo_fim,
-      }))
+      })),
     );
   }
 
@@ -1097,7 +1184,7 @@ const tempoStats = computed(() => {
         o.data_inicio,
         o.tempo_inicio,
         o.data_fim,
-        o.tempo_fim
+        o.tempo_fim,
       ),
     }))
     .filter((o) => o.minutos !== null && o.minutos > 0) as Array<{
@@ -1115,7 +1202,7 @@ const tempoStats = computed(() => {
     osComTempoExecucao > 0
       ? Math.round(
           ordensComTempo.reduce((sum, o) => sum + o.minutos, 0) /
-            osComTempoExecucao
+            osComTempoExecucao,
         )
       : 0;
   const tempoMedioExecucao =
@@ -1123,7 +1210,7 @@ const tempoStats = computed(() => {
 
   // Tempo médio de resposta (data_solicitacao → data_recebimento)
   const ordensComResposta = ordens.value.filter(
-    (o) => o.data_solicitacao && o.data_recebimento
+    (o) => o.data_solicitacao && o.data_recebimento,
   );
   let tempoMedioResposta = "—";
   if (ordensComResposta.length > 0) {
@@ -1134,19 +1221,19 @@ const tempoStats = computed(() => {
         0,
         Math.round(
           (recebimento.getTime() - solicitacao.getTime()) /
-            (1000 * 60 * 60 * 24)
-        )
+            (1000 * 60 * 60 * 24),
+        ),
       ); // dias
     });
     const mediaDias = Math.round(
-      temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length
+      temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length,
     );
     tempoMedioResposta =
       mediaDias === 0
         ? "Mesmo dia"
         : mediaDias === 1
-        ? "1 dia"
-        : `${mediaDias} dias`;
+          ? "1 dia"
+          : `${mediaDias} dias`;
   }
 
   // OS mais rápida e mais demorada
@@ -1189,7 +1276,7 @@ const tempoStats = computed(() => {
 
   ordensComTempo.forEach((o) => {
     const faixa = distribuicaoTempo.find(
-      (f) => o.minutos >= f.min && o.minutos <= f.max
+      (f) => o.minutos >= f.min && o.minutos <= f.max,
     );
     if (faixa) faixa.count++;
   });
@@ -1208,10 +1295,10 @@ const tempoStats = computed(() => {
       categoria,
       count: tempos.length,
       tempoMedioMin: Math.round(
-        tempos.reduce((a, b) => a + b, 0) / tempos.length
+        tempos.reduce((a, b) => a + b, 0) / tempos.length,
       ),
       tempoMedio: formatarTempo(
-        Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length)
+        Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length),
       ),
     }))
     .sort((a, b) => a.tempoMedioMin - b.tempoMedioMin);
@@ -1222,9 +1309,79 @@ const tempoStats = computed(() => {
     tempoFormatado: formatarTempo(o.minutos),
   }));
 
+  // MTTR: média do tempo de reparo em OS corretivas fechadas
+  const corretivasFechadasComTempo = ordens.value
+    .filter((o) => o.tipo_os === "CORRETIVA" && !!o.data_liberacao)
+    .map((o) =>
+      calcularTempoMinutos(
+        o.data_inicio,
+        o.tempo_inicio,
+        o.data_fim,
+        o.tempo_fim,
+      ),
+    )
+    .filter((min): min is number => min !== null && min > 0);
+
+  const mttr =
+    corretivasFechadasComTempo.length > 0
+      ? formatarTempo(
+          Math.round(
+            corretivasFechadasComTempo.reduce((acc, atual) => acc + atual, 0) /
+              corretivasFechadasComTempo.length,
+          ),
+        )
+      : "—";
+
+  // MTBF: média do tempo entre falhas (OS corretivas) por ativo
+  const corretivasPorAtivo = new Map<number, Date[]>();
+
+  ordens.value
+    .filter(
+      (o) => o.tipo_os === "CORRETIVA" && !!o.ativo_id && !!o.data_solicitacao,
+    )
+    .forEach((o) => {
+      const dataFalha = converterDataHoraParaDate(o.data_solicitacao);
+      if (!dataFalha || !o.ativo_id) return;
+
+      if (!corretivasPorAtivo.has(o.ativo_id)) {
+        corretivasPorAtivo.set(o.ativo_id, []);
+      }
+
+      corretivasPorAtivo.get(o.ativo_id)!.push(dataFalha);
+    });
+
+  const intervalosFalhaMinutos: number[] = [];
+  corretivasPorAtivo.forEach((datasFalhas) => {
+    if (datasFalhas.length < 2) return;
+
+    const datasOrdenadas = [...datasFalhas].sort(
+      (a, b) => a.getTime() - b.getTime(),
+    );
+
+    for (let i = 1; i < datasOrdenadas.length; i++) {
+      const diffMs =
+        datasOrdenadas[i].getTime() - datasOrdenadas[i - 1].getTime();
+      if (diffMs > 0) {
+        intervalosFalhaMinutos.push(Math.round(diffMs / (1000 * 60)));
+      }
+    }
+  });
+
+  const mtbf =
+    intervalosFalhaMinutos.length > 0
+      ? formatarTempo(
+          Math.round(
+            intervalosFalhaMinutos.reduce((acc, atual) => acc + atual, 0) /
+              intervalosFalhaMinutos.length,
+          ),
+        )
+      : "—";
+
   return {
     tempoMedioExecucao,
     tempoMedioResposta,
+    mttr,
+    mtbf,
     osComTempoExecucao,
     osMaisRapida,
     osMaisDemorada,
