@@ -493,7 +493,7 @@ const formData = reactive({
 // Função auxiliar para fazer queries diretas via REST API (bypass do SDK que está com problemas)
 const fetchSupabase = async (endpoint: string, options = {}) => {
   console.log(
-    `[fetchSupabase] Iniciando requisição: ${endpoint.substring(0, 100)}...`
+    `[fetchSupabase] Iniciando requisição: ${endpoint.substring(0, 100)}...`,
   );
 
   const url = `${supabase.supabaseUrl}/rest/v1/${endpoint}`;
@@ -517,14 +517,14 @@ const fetchSupabase = async (endpoint: string, options = {}) => {
       const errorText = await response.text();
       console.error(`[fetchSupabase] Erro HTTP ${response.status}:`, errorText);
       throw new Error(
-        `HTTP ${response.status}: ${response.statusText} - ${errorText}`
+        `HTTP ${response.status}: ${response.statusText} - ${errorText}`,
       );
     }
 
     const data = await response.json();
     console.log(
       `[fetchSupabase] Dados recebidos:`,
-      Array.isArray(data) ? `${data.length} registros` : "objeto único"
+      Array.isArray(data) ? `${data.length} registros` : "objeto único",
     );
     return data;
   } catch (error) {
@@ -556,7 +556,7 @@ const carregar = async (tentativa = 1) => {
     `.replace(/\s+/g, "");
 
     const ordemArray = await fetchSupabase(
-      `ordens_servico?id=eq.${id}&select=${select}&limit=1`
+      `ordens_servico?id=eq.${id}&select=${select}&limit=1`,
     );
 
     console.log("[1/3] ✓ Resposta recebida da API");
@@ -611,7 +611,7 @@ const carregar = async (tentativa = 1) => {
     console.log("[3/3] Carregando lista de executores...");
     try {
       const execData = await fetchSupabase(
-        "funcionarios?or=(funcao.ilike.*manutenção*,funcao.ilike.*manutencao*,funcao.ilike.*auxiliar*,funcao.ilike.*mecânico*,funcao.ilike.*mecanico*,funcao.ilike.*eletricista*)&order=nome.asc"
+        "funcionarios?select=id,nome,funcao&order=nome.asc",
       );
 
       if (execData) {
@@ -669,10 +669,10 @@ const salvar = async () => {
     // Validação de datas/horas
     if (formData.data_inicio && formData.data_fim) {
       const dataInicio = new Date(
-        formData.data_inicio + "T" + (formData.tempo_inicio || "00:00")
+        formData.data_inicio + "T" + (formData.tempo_inicio || "00:00"),
       );
       const dataFim = new Date(
-        formData.data_fim + "T" + (formData.tempo_fim || "00:00")
+        formData.data_fim + "T" + (formData.tempo_fim || "00:00"),
       );
       if (dataFim < dataInicio) {
         mensagem.value = {
@@ -682,7 +682,7 @@ const salvar = async () => {
         };
         salvando.value = false;
         showError(
-          "A data/hora de fim não pode ser menor que a data/hora de início."
+          "A data/hora de fim não pode ser menor que a data/hora de início.",
         );
         return;
       }
