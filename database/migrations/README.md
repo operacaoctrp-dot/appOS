@@ -6,6 +6,13 @@ Este diretório contém as migrações SQL para o banco de dados do sistema de O
 
 Execute as migrações na ordem indicada pelos números:
 
+- 001_create_user_profiles.sql
+- 002_add_manutencao_preenchidos.sql
+- 003_fix_policies_recursion.sql
+- 004_add_tempo_execucao_fields.sql
+- 005_add_sample_tempo_data.sql
+- 006_set_isaacnilton_admin.sql
+
 ### 001 - Criar Tabela de Perfis de Usuários (user_profiles)
 
 **Arquivo:** `001_create_user_profiles.sql`
@@ -69,6 +76,18 @@ Execute as migrações na ordem indicada pelos números:
 2. Vá em **SQL Editor**
 3. Cole o conteúdo do arquivo `002_add_manutencao_preenchidos.sql`
 4. Clique em **Run** para executar
+
+### 006 - Garantir Admin para Usuário Específico
+
+**Arquivo:** `006_set_isaacnilton_admin.sql`
+
+**Objetivo:** Garantir que o usuário `isaacnilton@marquise.com.br` tenha role `admin`.
+
+**Funcionalidades:**
+
+- Promove para `admin` se o perfil já existir em `user_profiles`
+- Cria o perfil como `admin` caso o usuário já exista em `auth.users` e ainda não tenha perfil
+- Migração idempotente (segura para reexecução)
 
 ## Sistema de Roles
 
